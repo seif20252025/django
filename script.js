@@ -12,6 +12,9 @@ let userSettings = {
 let registeredMembers = [];
 let hasNewMessages = false;
 
+// مفتاح التخزين العالمي للعروض
+const GLOBAL_OFFERS_KEY = 'globalGameShopOffers';
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -28,7 +31,7 @@ function initializeApp() {
         showLoginPage();
     }
 
-    // Load data from localStorage for offline functionality
+    // Load data from localStorage
     loadOffersFromGlobalStorage();
     loadConversationsFromStorage();
     loadUserSettingsFromStorage();
@@ -38,33 +41,29 @@ function initializeApp() {
     setupEventListeners();
 }
 
-// نظام العروض العالمي من خلال الخادم
-async function loadOffersFromGlobalStorage() {
+// نظام العروض العالمي الجديد
+function loadOffersFromGlobalStorage() {
     try {
-        // محاولة تحميل العروض من الخادم أولاً
-        const response = await fetch('/api/offers');
-        if (response.ok) {
-            const serverOffers = await response.json();
-            offers = serverOffers || [];
-            console.log('تم تحميل العروض من الخادم:', offers.length);
-        } else {
-            // في حالة عدم توفر الخادم، استخدم localStorage كاحتياطي
-            const localOffers = localStorage.getItem('backupOffers');
-            offers = localOffers ? JSON.parse(localOffers) : [];
-            console.log('تم تحميل العروض من التخزين المحلي:', offers.length);
-        }
+        const globalOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+        offers = globalOffers ? JSON.parse(globalOffers) : [];
+
+        // ترتيب العروض حسب التاريخ (الأحدث أولاً)
+        offers.sort((a, b) => {
+            const timeA = new Date(a.timestamp || 0).getTime();
+            const timeB = new Date(b.timestamp || 0).getTime();
+            return timeB - timeA;
+        });
 
         displayOffers();
+        console.log('تم تحميل العروض العالمية:', offers.length);
     } catch (error) {
         console.error('خطأ في تحميل العروض:', error);
-        // في حالة الخطأ، استخدم localStorage
-        const localOffers = localStorage.getItem('backupOffers');
-        offers = localOffers ? JSON.parse(localOffers) : [];
+        offers = [];
         displayOffers();
     }
 }
 
-async function saveOfferToGlobalStorage(offer) {
+function saveOfferToGlobalStorage(offer) {
     try {
         // إنشاء معرف فريد للعرض
         offer.id = Date.now() + Math.random();
@@ -72,36 +71,21 @@ async function saveOfferToGlobalStorage(offer) {
         offer.likedBy = [];
         offer.timestamp = new Date().toISOString();
 
-        // محاولة حفظ العرض على الخادم
-        const response = await fetch('/api/offers', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(offer)
-        });
+        // تحميل العروض الحالية
+        const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+        offers = currentOffers ? JSON.parse(currentOffers) : [];
 
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-                offers = result.offers || [];
-                // حفظ نسخة احتياطية محلياً
-                localStorage.setItem('backupOffers', JSON.stringify(offers));
-                displayOffers();
-                console.log('تم حفظ العرض على الخادم بنجاح');
-                return offer;
-            }
-        }
-
-        // في حالة فشل الخادم، احفظ محلياً فقط
-        const localOffers = localStorage.getItem('backupOffers');
-        offers = localOffers ? JSON.parse(localOffers) : [];
+        // إضافة العرض الجديد في المقدمة
         offers.unshift(offer);
-        localStorage.setItem('backupOffers', JSON.stringify(offers));
-        displayOffers();
-        console.log('تم حفظ العرض محلياً كاحتياطي');
-        return offer;
 
+        // حفظ العروض المحدثة
+        localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+
+        // عرض العروض المحدثة
+        displayOffers();
+
+        console.log('تم حفظ العرض عالمياً:', offer);
+        return offer;
     } catch (error) {
         console.error('خطأ في حفظ العرض:', error);
         return null;
@@ -129,28 +113,6 @@ function saveConversationsToStorage() {
     }
 }
 
-async function saveMessageToServer(chatId, message) {
-    try {
-        // This function was removed from edited code, putting back from original for compatibility
-        const API_BASE = '';
-        const response = await fetch(`${API_BASE}/api/conversations`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ chatId, message })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            return result.message;
-        }
-    } catch (error) {
-        console.error('Error saving message:', error);
-    }
-    return null;
-}
-
 function loadMembersFromStorage() {
     try {
         const savedMembers = localStorage.getItem('gamesShopMembers');
@@ -168,29 +130,6 @@ function saveMembersToStorage() {
     } catch (error) {
         console.error('Error saving members to storage:', error);
     }
-}
-
-async function saveMemberToServer(member) {
-    try {
-        // This function was removed from edited code, putting back from original for compatibility
-        const API_BASE = '';
-        const response = await fetch(`${API_BASE}/api/members`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(member)
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            registeredMembers = result.members;
-            return true;
-        }
-    } catch (error) {
-        console.error('Error saving member:', error);
-    }
-    return false;
 }
 
 function loadUserSettingsFromStorage() {
@@ -214,61 +153,6 @@ function saveUserSettingsToStorage() {
         return true;
     } catch (error) {
         console.error('Error saving user settings to storage:', error);
-        return false;
-    }
-}
-
-async function saveUserSettingsToServer() {
-    try {
-        // This function was removed from edited code, putting back from original for compatibility
-        const API_BASE = '';
-        const response = await fetch(`${API_BASE}/api/settings/${currentUser.id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userSettings)
-        });
-        return response.ok;
-    } catch (error) {
-        console.error('Error saving user settings:', error);
-        return false;
-    }
-}
-
-async function checkVIPStatus() {
-    try {
-        // This function was removed from edited code, putting back from original for compatibility
-        const API_BASE = '';
-        if (!currentUser) return false;
-
-        const response = await fetch(`${API_BASE}/api/vip/${currentUser.id}`);
-        if (response.ok) {
-            const result = await response.json();
-            return result.isVIP;
-        }
-    } catch (error) {
-        console.error('Error checking VIP status:', error);
-    }
-    return false;
-}
-
-async function activateVIPOnServer() {
-    try {
-        // This function was removed from edited code, putting back from original for compatibility
-        const API_BASE = '';
-        if (!currentUser) return false;
-
-        const response = await fetch(`${API_BASE}/api/vip`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userId: currentUser.id })
-        });
-        return response.ok;
-    } catch (error) {
-        console.error('Error activating VIP:', error);
         return false;
     }
 }
@@ -370,7 +254,12 @@ function setupEventListeners() {
         }
     });
 
-    // لا حاجة للاستماع للتخزين المحلي بعد الآن
+    // الاستماع لتغييرات التخزين المحلي لتحديث العروض فوراً
+    window.addEventListener('storage', function(e) {
+        if (e.key === GLOBAL_OFFERS_KEY) {
+            loadOffersFromGlobalStorage();
+        }
+    });
 }
 
 // Login functionality
@@ -413,16 +302,11 @@ function showMainPage() {
     loadUserSettingsFromStorage();
     loadMembersFromStorage();
 
-    // Display offers (reload to get latest shared offers)
+    // Display offers
     displayOffers();
 
     // Check for new messages
     checkForNewMessages();
-
-    // تحديث العروض كل 30 ثانية فقط (أقل إزعاجاً)
-    setInterval(() => {
-        loadOffersFromGlobalStorage();
-    }, 30000);
 }
 
 // Side menu functionality
@@ -518,7 +402,7 @@ function submitOffer() {
         const savedOffer = saveOfferToGlobalStorage(newOffer);
         if (savedOffer) {
             closeAddOfferModal();
-            showNotification('تم إضافة العرض بنجاح! 🎉 سيظهر لجميع المستخدمين');
+            showNotification('تم إضافة العرض بنجاح! 🎉 سيظهر لجميع المستخدمين فوراً');
         } else {
             alert('حدث خطأ في إضافة العرض');
         }
@@ -554,7 +438,7 @@ function displayOffers(filteredOffers = null) {
         container.appendChild(offerCard);
     });
 
-    console.log('تم عرض العروض:', sortedOffers.length);
+    console.log('تم عرض العروض العالمية:', sortedOffers.length);
 }
 
 function createOfferCard(offer) {
@@ -599,85 +483,46 @@ function createOfferCard(offer) {
     return card;
 }
 
-async function toggleLike(offerId) {
+function toggleLike(offerId) {
     try {
-        // محاولة تحديث الإعجاب على الخادم
-        const response = await fetch(`/api/offers/${offerId}/like`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userId: currentUser.id })
-        });
+        const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+        offers = currentOffers ? JSON.parse(currentOffers) : [];
 
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-                // إعادة تحميل العروض من الخادم
-                await loadOffersFromGlobalStorage();
-                return;
+        const offerIndex = offers.findIndex(o => o.id === offerId);
+        if (offerIndex !== -1) {
+            const offer = offers[offerIndex];
+
+            if (!offer.likedBy) offer.likedBy = [];
+            if (!offer.likes) offer.likes = 0;
+
+            const userIndex = offer.likedBy.indexOf(currentUser.id);
+            if (userIndex > -1) {
+                offer.likedBy.splice(userIndex, 1);
+                offer.likes = Math.max(0, offer.likes - 1);
+            } else {
+                offer.likedBy.push(currentUser.id);
+                offer.likes = (offer.likes || 0) + 1;
             }
-        }
 
-        // في حالة فشل الخادم، قم بالتحديث محلياً
-        const localOffers = localStorage.getItem('backupOffers');
-        if (localOffers) {
-            offers = JSON.parse(localOffers);
-
-            const offerIndex = offers.findIndex(o => o.id === offerId);
-            if (offerIndex !== -1) {
-                const offer = offers[offerIndex];
-
-                if (!offer.likedBy) offer.likedBy = [];
-                if (!offer.likes) offer.likes = 0;
-
-                const userIndex = offer.likedBy.indexOf(currentUser.id);
-                if (userIndex > -1) {
-                    offer.likedBy.splice(userIndex, 1);
-                    offer.likes = Math.max(0, offer.likes - 1);
-                } else {
-                    offer.likedBy.push(currentUser.id);
-                    offer.likes = (offer.likes || 0) + 1;
-                }
-
-                offers[offerIndex] = offer;
-                localStorage.setItem('backupOffers', JSON.stringify(offers));
-                displayOffers();
-            }
+            offers[offerIndex] = offer;
+            localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+            displayOffers();
         }
     } catch (error) {
         console.error('Error toggling like:', error);
     }
 }
 
-async function deleteOffer(offerId) {
+function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
         try {
-            // محاولة حذف العرض من الخادم
-            const response = await fetch(`/api/offers/${offerId}`, {
-                method: 'DELETE'
-            });
+            const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+            offers = currentOffers ? JSON.parse(currentOffers) : [];
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    offers = result.offers || [];
-                    localStorage.setItem('backupOffers', JSON.stringify(offers));
-                    displayOffers();
-                    showNotification('تم حذف العرض بنجاح 🗑️');
-                    return;
-                }
-            }
-
-            // في حالة فشل الخادم، احذف محلياً
-            const localOffers = localStorage.getItem('backupOffers');
-            if (localOffers) {
-                offers = JSON.parse(localOffers);
-                offers = offers.filter(offer => offer.id !== offerId);
-                localStorage.setItem('backupOffers', JSON.stringify(offers));
-                displayOffers();
-                showNotification('تم حذف العرض محلياً 🗑️');
-            }
+            offers = offers.filter(offer => offer.id !== offerId);
+            localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+            displayOffers();
+            showNotification('تم حذف العرض بنجاح 🗑️');
         } catch (error) {
             console.error('Error deleting offer:', error);
             alert('حدث خطأ في حذف العرض');
@@ -912,9 +757,6 @@ async function saveProfile() {
 
     localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
 
-    // Update on server
-    await saveMemberToServer(currentUser);
-
     // Update display
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
@@ -943,7 +785,7 @@ function updateSettingsDisplay() {
 
 async function toggleMessageSettings() {
     userSettings.allowMessages = !userSettings.allowMessages;
-    await saveUserSettingsToServer();
+    saveUserSettingsToStorage();
     updateSettingsDisplay();
     showNotification(userSettings.allowMessages ? 'تم تفعيل المراسلات ✅' : 'تم إيقاف المراسلات 🚫');
 }
@@ -975,7 +817,8 @@ function loadBlockList() {
         const messages = conversations[chatId];
         const otherUserId = parseInt(chatId.split('-').find(id => id !== currentUser.id.toString()));
 
-        let otherUserName = 'مستخدم غير معروف';let otherUserAvatar = 1;
+        let otherUserName = 'مستخدم غير معروف';
+        let otherUserAvatar = 1;
 
         const offer = offers.find(o => o.userId == otherUserId);
         if (offer) {
@@ -1010,7 +853,7 @@ function loadBlockList() {
 async function blockUser(userId, userName) {
     if (confirm(`هل أنت متأكد من حظر ${userName}؟`)) {
         userSettings.blockedUsers.push(userId);
-        await saveUserSettingsToServer();
+        saveUserSettingsToStorage();
         loadBlockList();
         showNotification(`تم حظر ${userName} بنجاح 🚫`);
     }
@@ -1019,7 +862,7 @@ async function blockUser(userId, userName) {
 async function unblockUser(userId, userName) {
     if (confirm(`هل أنت متأكد من إلغاء حظر ${userName}؟`)) {
         userSettings.blockedUsers = userSettings.blockedUsers.filter(id => id !== userId);
-        await saveUserSettingsToServer();
+        saveUserSettingsToStorage();
         loadBlockList();
         showNotification(`تم إلغاء حظر ${userName} ✅`);
     }
@@ -1117,7 +960,7 @@ function showNotification(message) {
     `;
 
     if (!document.getElementById('notificationStyles')) {
-        const style = document.createElement('style');
+        const style =document.createElement('style');
         style.id = 'notificationStyles';
         style.textContent = `
             @keyframes slideInRight {
@@ -1147,141 +990,23 @@ function showNotification(message) {
 
 // AdSense Functions
 let adInitialized = false;
-let periodicAdInterval = null;
 
 function initializeAds() {
     try {
-        // Check if AdSense is available and not already initialized
         if (typeof adsbygoogle !== 'undefined' && window.adsbygoogle) {
-            const adsenseElements = document.querySelectorAll('.adsbygoogle');
-            adsenseElements.forEach((element, index) => {
-                if (!element.dataset.adsenseInitialized) {
-                    try {
-                        (adsbygoogle = window.adsbygoogle || []).push({});
-                        element.dataset.adsenseInitialized = 'true';
-                    } catch (e) {
-                        console.log(`AdSense error for element ${index}:`, e);
-                    }
+            const adsenseElements = document.querySelectorAll('.adsbygoogle:not([data-adsense-initialized])');
+            adsenseElements.forEach((element) => {
+                try {
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                    element.dataset.adsenseInitialized = 'true';
+                } catch (e) {
+                    console.log('AdSense error:', e);
                 }
             });
             console.log('AdSense loaded successfully');
         }
     } catch (e) {
         console.log('AdSense initialization error:', e);
-    }
-}
-
-function showPeriodicAd() {
-    // التحقق من عدم وجود إعلان يُعرض بالفعل
-    if (document.querySelector('.ad-overlay')) {
-        return;
-    }
-
-    try {
-        const adOverlay = document.createElement('div');
-        adOverlay.className = 'ad-overlay';
-        adOverlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 3000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-        `;
-
-        const adContainer = document.createElement('div');
-        adContainer.style.cssText = `
-            background: linear-gradient(135deg, #000428 0%, #004e92 100%);
-            padding: 2rem;
-            border-radius: 15px;
-            max-width: 90%;
-            width: 500px;
-            text-align: center;
-            position: relative;
-            border: 2px solid #00bfff;
-            box-shadow: 0 20px 40px rgba(0, 191, 255, 0.3);
-            color: white;
-        `;
-
-        adContainer.innerHTML = `
-            <div style="margin-bottom: 1rem;">
-                <span id="adTimer" style="background: #ff4444; color: white; padding: 0.5rem 1rem; border-radius: 50px; font-weight: bold; font-size: 1.1rem;">5</span>
-            </div>
-            <div style="background: linear-gradient(45deg, #00bfff, #004e92); padding: 2.5rem; border-radius: 15px; margin-bottom: 1rem;">
-                <h2 style="margin: 0 0 1rem 0; color: white; font-size: 2rem;">🎮 GAMES SHOP 🎮</h2>
-                <p style="margin: 0.5rem 0; font-size: 1.1rem;">أفضل موقع لبيع وشراء عروض الألعاب</p>
-                <p style="margin: 0.5rem 0; font-size: 1.1rem;">انضم إلى مجتمعنا الآن!</p>
-                <p style="margin: 0.5rem 0; font-size: 1.1rem; color: #ffd700;">احصل على VIP واستمتع بالمميزات الحصرية! 👑</p>
-            </div>
-            <button id="closeAdBtn" style="
-                background: #666;
-                border: none;
-                padding: 0.8rem 1.5rem;
-                border-radius: 10px;
-                cursor: not-allowed;
-                color: #ccc;
-                font-size: 1rem;
-                font-weight: bold;
-                transition: all 0.3s ease;
-            " disabled>إغلاق (5)</button>
-        `;
-
-        adOverlay.appendChild(adContainer);
-        document.body.appendChild(adOverlay);
-
-        const closeAd = () => {
-            if (adOverlay && adOverlay.parentNode) {
-                adOverlay.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => {
-                    if (adOverlay.parentNode) {
-                        adOverlay.parentNode.removeChild(adOverlay);
-                    }
-                }, 300);
-            }
-        };
-
-        let countdown = 5;
-        const countdownInterval = setInterval(() => {
-            countdown--;
-            const timerElement = document.getElementById('adTimer');
-            const closeBtn = document.getElementById('closeAdBtn');
-
-            if (timerElement) timerElement.textContent = countdown;
-            if (closeBtn) closeBtn.textContent = `إغلاق (${countdown})`;
-
-            if (countdown <= 0) {
-                clearInterval(countdownInterval);
-                if (closeBtn) {
-                    closeBtn.disabled = false;
-                    closeBtn.style.background = 'linear-gradient(45deg, #00bfff, #004e92)';
-                    closeBtn.style.color = 'white';
-                    closeBtn.style.cursor = 'pointer';
-                    closeBtn.textContent = 'إغلاق ✕';
-                    closeBtn.addEventListener('click', closeAd);
-                }
-                if (timerElement) timerElement.style.display = 'none';
-            }
-        }, 1000);
-
-        if (!document.getElementById('adAnimationStyles')) {
-            const style = document.createElement('style');
-            style.id = 'adAnimationStyles';
-            style.textContent = `
-                @keyframes fadeOut {
-                    from { opacity: 1; transform: scale(1); }
-                    to { opacity: 0; transform: scale(0.9); }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
-    } catch (error) {
-        console.warn('Periodic ad error:', error);
     }
 }
 
@@ -1298,27 +1023,9 @@ function showSecurityWarning(callback) {
 }
 
 // Members functionality
-async function showMembersModal() {
+function showMembersModal() {
     document.getElementById('membersModal').classList.add('active');
-    await loadMembersFromServer();
     loadMembersList();
-}
-
-async function loadMembersFromServer() {
-     // This function was removed from edited code, putting back from original for compatibility
-    try {
-        const API_BASE = '';
-        const response = await fetch(`${API_BASE}/api/members`);
-        if (response.ok) {
-            const result = await response.json();
-            registeredMembers = result.members;
-            saveMembersToStorage();
-            return true;
-        }
-    } catch (error) {
-        console.error('Error loading members:', error);
-        return false;
-    }
 }
 
 function registerMember() {
@@ -1374,13 +1081,6 @@ function loadMembersList() {
 }
 
 // Message notifications
-function notifyNewMessage(recipientId) {
-    // This function was removed from edited code, putting back from original for compatibility
-    if (recipientId === currentUser.id) {
-        showMessageNotification();
-    }
-}
-
 function showMessageNotification() {
     const notification = document.getElementById('messageNotification');
     if (notification) {
