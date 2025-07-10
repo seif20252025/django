@@ -961,6 +961,72 @@ textarea.form-control {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
+/* VIP Offer Styling */
+.vip-offer {
+    border: 2px solid #ffd700 !important;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05)) !important;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.4) !important;
+    animation: vipGlow 2s infinite alternate;
+}
+
+@keyframes vipGlow {
+    0% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.4); }
+    100% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.7); }
+}
+
+.vip-badge-small {
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    color: #000;
+    padding: 0.3rem 0.6rem;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}
+
+/* Payment Modal Styling */
+.payment-form {
+    text-align: center;
+}
+
+.payment-form h4 {
+    color: #00bfff;
+    margin-bottom: 2rem;
+    font-size: 1.4rem;
+}
+
+.payment-form .form-group {
+    margin-bottom: 1.5rem;
+    text-align: right;
+}
+
+.payment-form .form-control[readonly] {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
+    color: #ffd700;
+    font-weight: bold;
+    text-align: center;
+}
+
+.payment-form select.form-control {
+    cursor: pointer;
+}
+
+.payment-form .submit-btn {
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    color: #000;
+    font-weight: bold;
+    font-size: 1.3rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
+}
+
+.payment-form .submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(255, 215, 0, 0.6);
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 8px;
