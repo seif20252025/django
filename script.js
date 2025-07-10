@@ -41,10 +41,23 @@ function initializeApp() {
     setupEventListeners();
 }
 
-// Storage functions for shared functionality
-function loadOffersFromStorage() {
+// Storage functions for shared functionality using server
+async function loadOffersFromStorage() {
     try {
-        // Load from global shared storage that all users can see across all sessions
+        // Try to load from server first
+        const response = await fetch('/api/offers');
+        if (response.ok) {
+            const serverOffers = await response.json();
+            offers = serverOffers;
+            displayOffers();
+            return;
+        }
+    } catch (error) {
+        console.warn('Server not available, using local storage');
+    }
+    
+    // Fallback to localStorage for offline mode
+    try {
         const savedOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
         if (savedOffers) {
             offers = JSON.parse(savedOffers);
@@ -70,7 +83,7 @@ function saveOffersToStorage() {
     }
 }
 
-function saveOfferToStorage(offer) {
+async function saveOfferToStorage(offer) {
     try {
         // Generate unique ID
         offer.id = Date.now() + Math.random();
@@ -78,16 +91,33 @@ function saveOfferToStorage(offer) {
         offer.likedBy = [];
         offer.timestamp = new Date().toISOString();
         
-        // Load existing offers first to ensure we have the latest data
+        // Try to save to server first
+        try {
+            const response = await fetch('/api/offers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(offer)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                offers = result.offers;
+                displayOffers();
+                return offer;
+            }
+        } catch (serverError) {
+            console.warn('Server not available, using local storage');
+        }
+        
+        // Fallback to localStorage
         const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
         if (existingOffers) {
             offers = JSON.parse(existingOffers);
         }
         
-        // Add new offer to the beginning
         offers.unshift(offer);
-        
-        // Save back to global shared storage
         saveOffersToStorage();
         
         return offer;
@@ -609,40 +639,52 @@ function createOfferCard(offer) {
 
 async function toggleLike(offerId) {
     try {
-        // Load current offers from global storage
+        // Try to update on server first
+        try {
+            const response = await fetch(`/api/offers/${offerId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId: currentUser.id })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    // Reload offers from server
+                    await loadOffersFromStorage();
+                    return;
+                }
+            }
+        } catch (serverError) {
+            console.warn('Server not available, using local storage');
+        }
+        
+        // Fallback to localStorage
         const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
         if (existingOffers) {
             offers = JSON.parse(existingOffers);
         }
         
-        // Find the offer
         const offerIndex = offers.findIndex(o => o.id === offerId);
         if (offerIndex !== -1) {
             const offer = offers[offerIndex];
             
-            // Initialize arrays if they don't exist
             if (!offer.likedBy) offer.likedBy = [];
             if (!offer.likes) offer.likes = 0;
             
-            // Toggle like
             const userIndex = offer.likedBy.indexOf(currentUser.id);
             if (userIndex > -1) {
-                // Remove like
                 offer.likedBy.splice(userIndex, 1);
                 offer.likes = Math.max(0, offer.likes - 1);
             } else {
-                // Add like
                 offer.likedBy.push(currentUser.id);
                 offer.likes = (offer.likes || 0) + 1;
             }
             
-            // Update the offer in array
             offers[offerIndex] = offer;
-            
-            // Save back to global storage
             saveOffersToStorage();
-            
-            // Update display
             displayOffers();
         }
     } catch (error) {
@@ -653,19 +695,33 @@ async function toggleLike(offerId) {
 async function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
         try {
-            // Load current offers from global storage
+            // Try to delete from server first
+            try {
+                const response = await fetch(`/api/offers/${offerId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        offers = result.offers;
+                        displayOffers();
+                        showNotification('تم حذف العرض بنجاح 🗑️');
+                        return;
+                    }
+                }
+            } catch (serverError) {
+                console.warn('Server not available, using local storage');
+            }
+            
+            // Fallback to localStorage
             const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
             if (existingOffers) {
                 offers = JSON.parse(existingOffers);
             }
             
-            // Remove the offer
             offers = offers.filter(offer => offer.id !== offerId);
-            
-            // Save back to global storage
             saveOffersToStorage();
-            
-            // Update display
             displayOffers();
             
             showNotification('تم حذف العرض بنجاح 🗑️');

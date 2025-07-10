@@ -8,6 +8,7 @@ packages = ["static-web-server"]
 [deployment]
 publicDir = "/"
 deploymentTarget = "static"
+run = ["sh", "-c", "static-web-server -w ./.config/static-web-server.toml"]
 
 [workflows]
 runButton = "Start Server"
@@ -32,7 +33,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "static-web-server -w ./.config/static-web-server.toml"
+args = "node payment-backend.js"
 
 [[ports]]
 localPort = 80

@@ -7,6 +7,9 @@ const port = 3000;
 app.use(express.json());
 app.use(express.static('.'));
 
+// Global offers storage
+let globalOffers = [];
+
 // Payment endpoint
 app.post('/api/payment', async (req, res) => {
     try {
@@ -77,6 +80,62 @@ async function processExternalPayment(paymentData) {
         }, 1500);
     });
 }
+
+// Offers endpoints
+app.get('/api/offers', (req, res) => {
+    res.json(globalOffers);
+});
+
+app.post('/api/offers', (req, res) => {
+    try {
+        const offer = req.body;
+        globalOffers.unshift(offer);
+        res.json({ success: true, offers: globalOffers });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to save offer' });
+    }
+});
+
+app.delete('/api/offers/:offerId', (req, res) => {
+    try {
+        const offerId = parseFloat(req.params.offerId);
+        globalOffers = globalOffers.filter(offer => offer.id !== offerId);
+        res.json({ success: true, offers: globalOffers });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to delete offer' });
+    }
+});
+
+app.post('/api/offers/:offerId/like', (req, res) => {
+    try {
+        const offerId = parseFloat(req.params.offerId);
+        const { userId } = req.body;
+        
+        const offerIndex = globalOffers.findIndex(o => o.id === offerId);
+        if (offerIndex !== -1) {
+            const offer = globalOffers[offerIndex];
+            
+            if (!offer.likedBy) offer.likedBy = [];
+            if (!offer.likes) offer.likes = 0;
+            
+            const userIndex = offer.likedBy.indexOf(userId);
+            if (userIndex > -1) {
+                offer.likedBy.splice(userIndex, 1);
+                offer.likes = Math.max(0, offer.likes - 1);
+            } else {
+                offer.likedBy.push(userId);
+                offer.likes = (offer.likes || 0) + 1;
+            }
+            
+            globalOffers[offerIndex] = offer;
+            res.json({ success: true, offer: offer });
+        } else {
+            res.status(404).json({ success: false, error: 'Offer not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to like offer' });
+    }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
