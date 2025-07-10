@@ -826,6 +826,135 @@ textarea.form-control {
     }
 }
 
+/* Settings Styles */
+.settings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: rgba(0, 191, 255, 0.1);
+    border-radius: 10px;
+    border: 1px solid #00bfff;
+}
+
+.setting-info {
+    flex: 1;
+}
+
+.setting-label {
+    display: block;
+    color: #00bfff;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+}
+
+.setting-description {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+.toggle-btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 60px;
+}
+
+.toggle-btn.on {
+    background: linear-gradient(45deg, #00ff80, #00cc66);
+}
+
+.toggle-btn.off {
+    background: linear-gradient(45deg, #ff4757, #ff3742);
+}
+
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.setting-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(45deg, #ff4757, #ff3742);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+}
+
+.setting-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+}
+
+/* Block List Styles */
+.block-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.block-user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: rgba(0, 191, 255, 0.1);
+    border-radius: 10px;
+    border: 1px solid #00bfff;
+}
+
+.block-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.block-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #00bfff;
+}
+
+.block-user-name {
+    color: #00bfff;
+    font-weight: bold;
+}
+
+.block-btn {
+    padding: 0.7rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.block-btn.block {
+    background: linear-gradient(45deg, #ff4757, #ff3742);
+}
+
+.block-btn.unblock {
+    background: linear-gradient(45deg, #00ff80, #00cc66);
+}
+
+.block-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 8px;

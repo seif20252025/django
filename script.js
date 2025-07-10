@@ -5,6 +5,10 @@ let offers = [];
 let conversations = {};
 let currentChatPartner = null;
 let selectedAvatar = 1;
+let userSettings = {
+    allowMessages: true,
+    blockedUsers: []
+};
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -24,6 +28,7 @@ function initializeApp() {
     // Load saved data
     loadOffers();
     loadConversations();
+    loadUserSettings();
     
     // Event listeners
     setupEventListeners();
@@ -60,6 +65,10 @@ function setupEventListeners() {
     document.getElementById('editProfileBtn').addEventListener('click', () => {
         closeSideMenu();
         showEditProfileModal();
+    });
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+        closeSideMenu();
+        showSettingsModal();
     });
     
     // Add offer
@@ -330,6 +339,19 @@ function showAllOffers() {
 
 // Chat functionality
 function startChat(partnerName, partnerId) {
+    // التحقق من الحظر
+    if (userSettings.blockedUsers.includes(partnerId)) {
+        showNotification('لا يمكنك مراسلة هذا المستخدم - محظور 🚫');
+        return;
+    }
+    
+    // التحقق من إعدادات المستخدم المراد مراسلته
+    const partnerSettings = getPartnerSettings(partnerId);
+    if (!partnerSettings.allowMessages) {
+        showNotification('هذا المستخدم لا يقبل المراسلات حالياً 💬🚫');
+        return;
+    }
+    
     currentChatPartner = { name: partnerName, id: partnerId };
     document.getElementById('chatTitle').textContent = `مراسلة ${partnerName}`;
     document.getElementById('chatModal').classList.add('active');
@@ -549,6 +571,123 @@ function loadConversations() {
     const savedConversations = localStorage.getItem('gamesShopConversations');
     if (savedConversations) {
         conversations = JSON.parse(savedConversations);
+    }
+}
+
+// Settings functionality
+function showSettingsModal() {
+    document.getElementById('settingsModal').classList.add('active');
+    updateSettingsDisplay();
+}
+
+function updateSettingsDisplay() {
+    const allowMessagesToggle = document.getElementById('allowMessagesToggle');
+    allowMessagesToggle.textContent = userSettings.allowMessages ? 'ON' : 'OFF';
+    allowMessagesToggle.className = `toggle-btn ${userSettings.allowMessages ? 'on' : 'off'}`;
+}
+
+function toggleMessageSettings() {
+    userSettings.allowMessages = !userSettings.allowMessages;
+    saveUserSettings();
+    updateSettingsDisplay();
+    showNotification(userSettings.allowMessages ? 'تم تفعيل المراسلات ✅' : 'تم إيقاف المراسلات 🚫');
+}
+
+function showBlockListModal() {
+    document.getElementById('blockListModal').classList.add('active');
+    loadBlockList();
+}
+
+function loadBlockList() {
+    const container = document.getElementById('blockList');
+    const userChats = Object.keys(conversations).filter(chatId => 
+        chatId.includes(currentUser.id.toString())
+    );
+    
+    container.innerHTML = '';
+    
+    if (userChats.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا يوجد أشخاص للحظر</div>';
+        return;
+    }
+    
+    userChats.forEach(chatId => {
+        const messages = conversations[chatId];
+        if (messages.length === 0) return;
+        
+        const otherUserId = parseInt(chatId.split('-').find(id => id !== currentUser.id.toString()));
+        const offer = offers.find(o => o.userId == otherUserId);
+        const otherUserName = offer ? offer.userName : 'مستخدم غير معروف';
+        const otherUserAvatar = offer ? offer.userAvatar : 1;
+        
+        const isBlocked = userSettings.blockedUsers.includes(otherUserId);
+        
+        const userItem = document.createElement('div');
+        userItem.className = 'block-user-item';
+        userItem.innerHTML = `
+            <div class="block-user-info">
+                <img src="https://i.pravatar.cc/150?img=${otherUserAvatar}" alt="${otherUserName}" class="block-user-avatar">
+                <span class="block-user-name">${otherUserName}</span>
+            </div>
+            <button class="block-btn ${isBlocked ? 'unblock' : 'block'}" onclick="${isBlocked ? 'unblockUser' : 'blockUser'}(${otherUserId}, '${otherUserName}')">
+                ${isBlocked ? 'إلغاء الحظر' : 'حظر🚫'}
+            </button>
+        `;
+        
+        container.appendChild(userItem);
+    });
+}
+
+function blockUser(userId, userName) {
+    if (confirm(`هل أنت متأكد من حظر ${userName}؟`)) {
+        userSettings.blockedUsers.push(userId);
+        saveUserSettings();
+        loadBlockList();
+        
+        // إرسال رسالة للمحظور
+        const chatId = getChatId(currentUser.id, userId);
+        if (!conversations[chatId]) {
+            conversations[chatId] = [];
+        }
+        
+        const blockMessage = {
+            id: Date.now(),
+            senderId: currentUser.id,
+            text: `تم حظرك من قبل ${currentUser.name} 🚫`,
+            timestamp: new Date().toISOString(),
+            isSystemMessage: true
+        };
+        
+        conversations[chatId].push(blockMessage);
+        saveConversations();
+        
+        showNotification(`تم حظر ${userName} بنجاح 🚫`);
+    }
+}
+
+function unblockUser(userId, userName) {
+    if (confirm(`هل أنت متأكد من إلغاء حظر ${userName}؟`)) {
+        userSettings.blockedUsers = userSettings.blockedUsers.filter(id => id !== userId);
+        saveUserSettings();
+        loadBlockList();
+        showNotification(`تم إلغاء حظر ${userName} ✅`);
+    }
+}
+
+function getPartnerSettings(partnerId) {
+    // في التطبيق الحقيقي، يجب جلب إعدادات المستخدم من قاعدة البيانات
+    // هنا نفترض أن جميع المستخدمين يقبلون المراسلات افتراضياً
+    return { allowMessages: true };
+}
+
+function saveUserSettings() {
+    localStorage.setItem('gamesShopUserSettings', JSON.stringify(userSettings));
+}
+
+function loadUserSettings() {
+    const savedSettings = localStorage.getItem('gamesShopUserSettings');
+    if (savedSettings) {
+        userSettings = { ...userSettings, ...JSON.parse(savedSettings) };
     }
 }
 
