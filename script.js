@@ -53,7 +53,7 @@ async function loadOffersFromGlobalStorage() {
             offers = localOffers ? JSON.parse(localOffers) : [];
             console.log('تم تحميل العروض من التخزين المحلي:', offers.length);
         }
-        
+
         displayOffers();
     } catch (error) {
         console.error('خطأ في تحميل العروض:', error);
@@ -92,7 +92,7 @@ async function saveOfferToGlobalStorage(offer) {
                 return offer;
             }
         }
-        
+
         // في حالة فشل الخادم، احفظ محلياً فقط
         const localOffers = localStorage.getItem('backupOffers');
         offers = localOffers ? JSON.parse(localOffers) : [];
@@ -101,7 +101,7 @@ async function saveOfferToGlobalStorage(offer) {
         displayOffers();
         console.log('تم حفظ العرض محلياً كاحتياطي');
         return offer;
-        
+
     } catch (error) {
         console.error('خطأ في حفظ العرض:', error);
         return null;
@@ -618,19 +618,19 @@ async function toggleLike(offerId) {
                 return;
             }
         }
-        
+
         // في حالة فشل الخادم، قم بالتحديث محلياً
         const localOffers = localStorage.getItem('backupOffers');
         if (localOffers) {
             offers = JSON.parse(localOffers);
-            
+
             const offerIndex = offers.findIndex(o => o.id === offerId);
             if (offerIndex !== -1) {
                 const offer = offers[offerIndex];
-                
+
                 if (!offer.likedBy) offer.likedBy = [];
                 if (!offer.likes) offer.likes = 0;
-                
+
                 const userIndex = offer.likedBy.indexOf(currentUser.id);
                 if (userIndex > -1) {
                     offer.likedBy.splice(userIndex, 1);
@@ -639,7 +639,7 @@ async function toggleLike(offerId) {
                     offer.likedBy.push(currentUser.id);
                     offer.likes = (offer.likes || 0) + 1;
                 }
-                
+
                 offers[offerIndex] = offer;
                 localStorage.setItem('backupOffers', JSON.stringify(offers));
                 displayOffers();
@@ -668,7 +668,7 @@ async function deleteOffer(offerId) {
                     return;
                 }
             }
-            
+
             // في حالة فشل الخادم، احذف محلياً
             const localOffers = localStorage.getItem('backupOffers');
             if (localOffers) {
@@ -1151,41 +1151,23 @@ let periodicAdInterval = null;
 
 function initializeAds() {
     try {
-        // انتظار تحميل سكريپت AdSense
-        if (typeof window.adsbygoogle !== 'undefined') {
-            console.log('AdSense loaded successfully');
-
-            // تهيئة الإعلان الرئيسي مرة واحدة فقط
-            if (!adInitialized) {
-                const mainAd = document.querySelector('.main-ad');
-                if (mainAd && !mainAd.getAttribute('data-adsbygoogle-status')) {
+        // Check if AdSense is available and not already initialized
+        if (typeof adsbygoogle !== 'undefined' && window.adsbygoogle) {
+            const adsenseElements = document.querySelectorAll('.adsbygoogle');
+            adsenseElements.forEach((element, index) => {
+                if (!element.dataset.adsenseInitialized) {
                     try {
-                        (window.adsbygoogle = window.adsbygoogle || []).push({});
-                        adInitialized = true;
-                        console.log('Main ad initialized');
-                    } catch (adError) {
-                        console.warn('Main ad initialization failed:', adError);
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                        element.dataset.adsenseInitialized = 'true';
+                    } catch (e) {
+                        console.log(`AdSense error for element ${index}:`, e);
                     }
                 }
-            }
-
-            // عرض إعلانات دورية كل 8 دقائق
-            if (!periodicAdInterval) {
-                periodicAdInterval = setInterval(() => {
-                    try {
-                        showPeriodicAd();
-                    } catch (adError) {
-                        console.warn('Periodic ad failed:', adError);
-                    }
-                }, 480000); // 8 دقائق
-            }
-
-        } else {
-            // إعادة المحاولة إذا لم يتم تحميل AdSense بعد
-            setTimeout(initializeAds, 1000);
+            });
+            console.log('AdSense loaded successfully');
         }
-    } catch (error) {
-        console.warn('AdSense initialization error:', error);
+    } catch (e) {
+        console.log('AdSense initialization error:', e);
     }
 }
 
