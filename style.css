@@ -197,7 +197,7 @@ body {
     color: #00bfff;
 }
 
-.menu-btn, .add-offer-btn {
+.menu-btn, .add-offer-btn, .members-btn {
     padding: 0.8rem 1.5rem;
     background: linear-gradient(45deg, #00bfff, #000428);
     border: none;
@@ -209,9 +209,18 @@ body {
     box-shadow: 0 5px 15px rgba(0, 191, 255, 0.3);
 }
 
-.menu-btn:hover, .add-offer-btn:hover {
+.menu-btn:hover, .add-offer-btn:hover, .members-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(0, 191, 255, 0.5);
+}
+
+.members-btn {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
+.members-btn:hover {
+    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
 }
 
 /* Main Content */
@@ -1248,6 +1257,137 @@ textarea.form-control {
 .close-modal:disabled {
     color: #666 !important;
     cursor: not-allowed !important;
+}
+
+/* Notification Badge */
+.notification-badge {
+    background: #ff4757;
+    color: white;
+    border-radius: 50%;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-left: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Security Warning Modal */
+.security-warning {
+    text-align: center;
+    padding: 2rem;
+}
+
+.warning-icon {
+    font-size: 4rem;
+    color: #ff6b6b;
+    margin-bottom: 1rem;
+}
+
+.security-warning h4 {
+    color: #ff4757;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    line-height: 1.4;
+}
+
+.security-warning p {
+    color: #ffffff;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+    line-height: 1.4;
+}
+
+.agree-btn {
+    background: linear-gradient(45deg, #00ff80, #00cc66);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 255, 128, 0.4);
+}
+
+.agree-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 255, 128, 0.6);
+}
+
+/* Members Modal */
+.members-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.member-card {
+    background: linear-gradient(135deg, rgba(0, 191, 255, 0.1), rgba(0, 191, 255, 0.05));
+    border: 2px solid #00bfff;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.5s ease;
+}
+
+.member-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 191, 255, 0.3);
+}
+
+.member-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #00bfff;
+    margin: 0 auto 1rem;
+    display: block;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+}
+
+.member-name {
+    color: #00bfff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.member-greeting {
+    color: #ffffff;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.member-join-time {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+.vip-member {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.vip-member:hover {
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+}
+
+.vip-crown {
+    color: #ffd700;
+    font-size: 1.5rem;
+    margin-left: 0.5rem;
 }
 
 /* Scrollbar Styling */

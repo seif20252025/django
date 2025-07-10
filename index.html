@@ -40,6 +40,7 @@
                         <div class="vex-icon">Vex</div>
                         <span id="userVexBalance" class="vex-amount">0</span>
                     </div>
+                    <button id="membersBtn" class="members-btn">الأعضاء👋</button>
                     <button id="menuBtn" class="menu-btn">Menu🕹️</button>
                     <button id="addOfferBtn" class="add-offer-btn">اضافه عرض👾</button>
                 </div>
@@ -61,7 +62,7 @@
             </div>
             <div class="menu-items">
                 <button id="homeBtn" class="menu-item">البيت🏠</button>
-                <button id="messagesBtn" class="menu-item">المراسلات💬</button>
+                <button id="messagesBtn" class="menu-item">المراسلات💬<span id="messageNotification" class="notification-badge hidden">!</span></button>
                 <button id="mediatorsBtn" class="menu-item">الوسطاء👤</button>
                 <button id="gameOffersBtn" class="menu-item">عروض لالعاب معينه🕹️</button>
                 <button id="editProfileBtn" class="menu-item">تعديل الحساب🧢</button>
@@ -322,6 +323,38 @@
                                 <p class="dev-contact">تواصل مع الدعم الفني من القائمة الجانبية</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Warning Modal -->
+        <div id="securityWarningModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>تحذير أمني⚠️</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="security-warning">
+                        <i class="fas fa-shield-alt warning-icon"></i>
+                        <h4>الموقع ليس له أي علاقة بأي عملية سرقة تحدث دون وسطاء</h4>
+                        <p>للتأكد من إتمام العملية دون سرقة تواصل مع أحد الوسطاء في قائمة Menu📋</p>
+                        <button id="agreeWarning" class="agree-btn">موافقة✅</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Members Modal -->
+        <div id="membersModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>الأعضاء👋</h3>
+                    <button class="close-modal" onclick="closeModal('membersModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div id="membersList" class="members-list">
+                        <!-- Members will be displayed here -->
                     </div>
                 </div>
             </div>

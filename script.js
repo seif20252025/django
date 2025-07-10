@@ -10,6 +10,8 @@ let userSettings = {
     allowMessages: true,
     blockedUsers: []
 };
+let registeredMembers = [];
+let hasNewMessages = false;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -32,6 +34,7 @@ function initializeApp() {
     loadConversations();
     loadUserSettings();
     loadVexBalance();
+    loadMembers();
     
     // Event listeners
     setupEventListeners();
@@ -56,6 +59,7 @@ function setupEventListeners() {
     document.getElementById('messagesBtn').addEventListener('click', () => {
         closeSideMenu();
         showMessagesModal();
+        clearMessageNotification();
     });
     document.getElementById('mediatorsBtn').addEventListener('click', () => {
         closeSideMenu();
@@ -84,6 +88,11 @@ function setupEventListeners() {
     document.getElementById('marketBtn').addEventListener('click', () => {
         closeSideMenu();
         showMarketModal();
+    });
+    
+    // Members button
+    document.getElementById('membersBtn').addEventListener('click', () => {
+        showMembersModal();
     });
     
     // Add offer
@@ -159,8 +168,14 @@ function showMainPage() {
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
     updateVexDisplay();
     
+    // Register member
+    registerMember();
+    
     // Display offers
     displayOffers();
+    
+    // Check for new messages
+    checkForNewMessages();
 }
 
 // Side menu functionality
@@ -239,26 +254,29 @@ function submitOffer() {
         return;
     }
     
-    const newOffer = {
-        id: Date.now(),
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userAvatar: currentUser.avatar,
-        game: game,
-        offer: offerText,
-        requirement: requirement,
-        likes: 0,
-        likedBy: [],
-        timestamp: new Date().toISOString()
-    };
-    
-    offers.unshift(newOffer);
-    saveOffers();
-    displayOffers();
-    closeAddOfferModal();
-    
-    // Show success message
-    showNotification('تم إضافة العرض بنجاح! 🎉');
+    // Show security warning before submitting
+    showSecurityWarning(() => {
+        const newOffer = {
+            id: Date.now(),
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userAvatar: currentUser.avatar,
+            game: game,
+            offer: offerText,
+            requirement: requirement,
+            likes: 0,
+            likedBy: [],
+            timestamp: new Date().toISOString()
+        };
+        
+        offers.unshift(newOffer);
+        saveOffers();
+        displayOffers();
+        closeAddOfferModal();
+        
+        // Show success message
+        showNotification('تم إضافة العرض بنجاح! 🎉');
+    });
 }
 
 // Offers display
@@ -437,6 +455,9 @@ function sendMessage() {
     saveConversations();
     loadChatMessages();
     input.value = '';
+    
+    // إشعار للمستخدم الآخر بوجود رسالة جديدة
+    notifyNewMessage(currentChatPartner.id);
 }
 
 function getChatId(userId1, userId2) {
@@ -1009,5 +1030,141 @@ function closePeriodicAd() {
         modal.remove();
     }
 }
+
+// Security Warning Modal
+function showSecurityWarning(callback) {
+    const modal = document.getElementById('securityWarningModal');
+    modal.classList.add('active');
+    
+    const agreeBtn = document.getElementById('agreeWarning');
+    agreeBtn.onclick = () => {
+        modal.classList.remove('active');
+        if (callback) callback();
+    };
+}
+
+// Members functionality
+function showMembersModal() {
+    document.getElementById('membersModal').classList.add('active');
+    loadMembersList();
+}
+
+function registerMember() {
+    const existingMember = registeredMembers.find(m => m.id === currentUser.id);
+    if (!existingMember) {
+        const newMember = {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+            joinTime: new Date().toISOString(),
+            isVIP: isVIPUser(currentUser.id)
+        };
+        registeredMembers.push(newMember);
+        saveMembers();
+    } else {
+        // Update existing member info
+        existingMember.name = currentUser.name;
+        existingMember.avatar = currentUser.avatar;
+        existingMember.isVIP = isVIPUser(currentUser.id);
+        saveMembers();
+    }
+}
+
+function loadMembersList() {
+    const container = document.getElementById('membersList');
+    container.innerHTML = '';
+    
+    if (registeredMembers.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا يوجد أعضاء حالياً</div>';
+        return;
+    }
+    
+    // Sort members by VIP status first, then by join time
+    const sortedMembers = [...registeredMembers].sort((a, b) => {
+        if (a.isVIP && !b.isVIP) return -1;
+        if (!a.isVIP && b.isVIP) return 1;
+        return new Date(b.joinTime) - new Date(a.joinTime);
+    });
+    
+    sortedMembers.forEach(member => {
+        const memberCard = document.createElement('div');
+        memberCard.className = `member-card ${member.isVIP ? 'vip-member' : ''}`;
+        
+        const joinDate = new Date(member.joinTime).toLocaleDateString('ar-EG');
+        
+        memberCard.innerHTML = `
+            <img src="https://i.pravatar.cc/150?img=${member.avatar}" alt="${member.name}" class="member-avatar">
+            <div class="member-name">${member.name}${member.isVIP ? '<span class="vip-crown">👑</span>' : ''}</div>
+            <div class="member-greeting">منور يا ${member.name}</div>
+            <div class="member-join-time">انضم في ${joinDate}</div>
+        `;
+        
+        container.appendChild(memberCard);
+    });
+}
+
+function saveMembers() {
+    localStorage.setItem('registeredMembers', JSON.stringify(registeredMembers));
+}
+
+function loadMembers() {
+    const savedMembers = localStorage.getItem('registeredMembers');
+    if (savedMembers) {
+        registeredMembers = JSON.parse(savedMembers);
+    }
+}
+
+// Message notifications
+function notifyNewMessage(recipientId) {
+    // في التطبيق الحقيقي، هذا سيكون إشعار للمستخدم الآخر
+    // هنا نضع علامة تنبيه للمستخدم الحالي عند استلام رسالة
+    if (recipientId === currentUser.id) {
+        showMessageNotification();
+    }
+}
+
+function showMessageNotification() {
+    const notification = document.getElementById('messageNotification');
+    if (notification) {
+        notification.classList.remove('hidden');
+        hasNewMessages = true;
+    }
+}
+
+function clearMessageNotification() {
+    const notification = document.getElementById('messageNotification');
+    if (notification) {
+        notification.classList.add('hidden');
+        hasNewMessages = false;
+    }
+}
+
+function checkForNewMessages() {
+    // التحقق من وجود رسائل جديدة في المحادثات
+    const userChats = Object.keys(conversations).filter(chatId => 
+        chatId.includes(currentUser.id.toString())
+    );
+    
+    let hasUnreadMessages = false;
+    userChats.forEach(chatId => {
+        const messages = conversations[chatId];
+        if (messages && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            // إذا كانت الرسالة الأخيرة ليست من المستخدم الحالي
+            if (lastMessage.senderId !== currentUser.id) {
+                hasUnreadMessages = true;
+            }
+        }
+    });
+    
+    if (hasUnreadMessages) {
+        showMessageNotification();
+    }
+}
+
+// Load members on initialization
+document.addEventListener('DOMContentLoaded', function() {
+    loadMembers();
+});
 
 // No demo offers - only real user offers will be displayed
