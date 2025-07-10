@@ -41,10 +41,11 @@ function initializeApp() {
     setupEventListeners();
 }
 
-// Storage functions for offline functionality
+// Storage functions for shared functionality
 function loadOffersFromStorage() {
     try {
-        const savedOffers = localStorage.getItem('gamesShopOffers');
+        // Load from shared storage that all users can see
+        const savedOffers = localStorage.getItem('gamesShopSharedOffers');
         if (savedOffers) {
             offers = JSON.parse(savedOffers);
             displayOffers();
@@ -56,7 +57,8 @@ function loadOffersFromStorage() {
 
 function saveOffersToStorage() {
     try {
-        localStorage.setItem('gamesShopOffers', JSON.stringify(offers));
+        // Save to shared storage that all users can see
+        localStorage.setItem('gamesShopSharedOffers', JSON.stringify(offers));
     } catch (error) {
         console.error('Error saving offers to storage:', error);
     }
@@ -70,10 +72,16 @@ function saveOfferToStorage(offer) {
         offer.likedBy = [];
         offer.timestamp = new Date().toISOString();
         
-        // Add to offers array
+        // Load existing offers first to ensure we have the latest data
+        const existingOffers = localStorage.getItem('gamesShopSharedOffers');
+        if (existingOffers) {
+            offers = JSON.parse(existingOffers);
+        }
+        
+        // Add new offer to the beginning
         offers.unshift(offer);
         
-        // Save to localStorage
+        // Save back to shared storage
         saveOffersToStorage();
         
         return offer;
@@ -410,11 +418,16 @@ function showMainPage() {
     loadUserSettingsFromStorage();
     loadMembersFromStorage();
 
-    // Display offers
+    // Display offers (reload to get latest shared offers)
     displayOffers();
 
     // Check for new messages
     checkForNewMessages();
+    
+    // Set up periodic refresh to see new offers from other users
+    setInterval(() => {
+        loadOffersFromStorage();
+    }, 5000); // Refresh every 5 seconds
 }
 
 // Side menu functionality
@@ -587,31 +600,78 @@ function createOfferCard(offer) {
 }
 
 async function toggleLike(offerId) {
-    const updatedOffer = await likeOfferOnServer(offerId);
-    if (updatedOffer) {
-        // Update local offers array
+    try {
+        // Load current offers
+        const existingOffers = localStorage.getItem('gamesShopSharedOffers');
+        if (existingOffers) {
+            offers = JSON.parse(existingOffers);
+        }
+        
+        // Find the offer
         const offerIndex = offers.findIndex(o => o.id === offerId);
         if (offerIndex !== -1) {
-            offers[offerIndex] = updatedOffer;
+            const offer = offers[offerIndex];
+            
+            // Initialize arrays if they don't exist
+            if (!offer.likedBy) offer.likedBy = [];
+            if (!offer.likes) offer.likes = 0;
+            
+            // Toggle like
+            const userIndex = offer.likedBy.indexOf(currentUser.id);
+            if (userIndex > -1) {
+                // Remove like
+                offer.likedBy.splice(userIndex, 1);
+                offer.likes = Math.max(0, offer.likes - 1);
+            } else {
+                // Add like
+                offer.likedBy.push(currentUser.id);
+                offer.likes = (offer.likes || 0) + 1;
+            }
+            
+            // Update the offer in array
+            offers[offerIndex] = offer;
+            
+            // Save back to storage
+            saveOffersToStorage();
+            
+            // Update display
+            displayOffers();
         }
-        displayOffers();
+    } catch (error) {
+        console.error('Error toggling like:', error);
     }
 }
 
 async function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
-        const success = await deleteOfferFromServer(offerId);
-        if (success) {
-            await loadOffersFromServer();
+        try {
+            // Load current offers
+            const existingOffers = localStorage.getItem('gamesShopSharedOffers');
+            if (existingOffers) {
+                offers = JSON.parse(existingOffers);
+            }
+            
+            // Remove the offer
+            offers = offers.filter(offer => offer.id !== offerId);
+            
+            // Save back to storage
+            saveOffersToStorage();
+            
+            // Update display
+            displayOffers();
+            
             showNotification('تم حذف العرض بنجاح 🗑️');
-        } else {
+        } catch (error) {
+            console.error('Error deleting offer:', error);
             alert('حدث خطأ في حذف العرض');
         }
     }
 }
 
 function showAllOffers() {
-    loadOffersFromServer();
+    // Load latest shared offers
+    loadOffersFromStorage();
+    displayOffers();
 }
 
 // Chat functionality
