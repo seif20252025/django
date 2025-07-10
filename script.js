@@ -295,6 +295,13 @@ function setupEventListeners() {
     document.getElementById('chatInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') sendMessage();
     });
+    document.getElementById('sendImageBtn').addEventListener('click', () => {
+        document.getElementById('chatImage').click();
+    });
+    document.getElementById('chatImage').addEventListener('change', sendImageMessage);
+
+    // Image preview for offers
+    document.getElementById('offerImage').addEventListener('change', previewOfferImage);
 
     // Close modals when clicking outside
     window.addEventListener('click', function(e) {
@@ -307,6 +314,12 @@ function setupEventListeners() {
     window.addEventListener('storage', function(e) {
         if (e.key === GLOBAL_OFFERS_KEY) {
             loadOffersFromGlobalStorage();
+        } else if (e.key === 'newMessageNotification') {
+            const notification = JSON.parse(e.newValue);
+            if (notification.recipientId === currentUser.id) {
+                showMessageNotification();
+                loadMessagesList();
+            }
         }
     });
 }
@@ -501,6 +514,9 @@ function resetAddOfferForm() {
     document.getElementById('offerText').value = '';
     document.getElementById('priceAmount').value = '';
     document.getElementById('accountDetails').value = '';
+    document.getElementById('offerImage').value = '';
+    document.getElementById('imagePreview').innerHTML = '';
+    document.getElementById('imagePreview').classList.add('hidden');
     document.getElementById('currencyOptions').classList.add('hidden');
     document.getElementById('priceInput').classList.add('hidden');
     document.getElementById('accountInput').classList.add('hidden');
@@ -531,12 +547,30 @@ function selectCurrency(currency) {
     document.getElementById('currencyOptions').classList.add('hidden');
 }
 
+function previewOfferImage() {
+    const fileInput = document.getElementById('offerImage');
+    const preview = document.getElementById('imagePreview');
+    
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="معاينة الصورة">`;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    } else {
+        preview.innerHTML = '';
+        preview.classList.add('hidden');
+    }
+}
+
 function submitOffer() {
     const game = document.getElementById('gameSelect').value;
     const offerText = document.getElementById('offerText').value.trim();
     const priceAmount = document.getElementById('priceAmount').value;
     const selectedCurrency = document.getElementById('selectedCurrency').textContent;
     const accountDetails = document.getElementById('accountDetails').value.trim();
+    const imageFile = document.getElementById('offerImage').files[0];
 
     if (!game || !offerText) {
         alert('من فضلك املأ جميع الحقول المطلوبة');
@@ -553,6 +587,19 @@ function submitOffer() {
         return;
     }
 
+    // Process image if provided
+    if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            submitOfferWithImage(game, offerText, requirement, e.target.result);
+        };
+        reader.readAsDataURL(imageFile);
+    } else {
+        submitOfferWithImage(game, offerText, requirement, null);
+    }
+}
+
+function submitOfferWithImage(game, offerText, requirement, imageData) {
     // Show security warning before submitting
     showSecurityWarning(() => {
         const isVIP = checkVIPStatusLocal();
@@ -564,7 +611,8 @@ function submitOffer() {
             game: game,
             offer: offerText,
             requirement: requirement,
-            isVIP: isVIP
+            isVIP: isVIP,
+            image: imageData
         };
 
         const savedOffer = saveOfferToGlobalStorage(newOffer);
@@ -625,6 +673,7 @@ function createOfferCard(offer) {
         </div>
         <div class="offer-content">
             <h3>العرض📋</h3>
+            ${offer.image ? `<img src="${offer.image}" alt="صورة العرض" class="offer-image" onclick="showImageModal('${offer.image}')">` : ''}
             <div class="offer-details">
                 <div class="offer-detail">
                     <strong>اسم اللعبه 🕹️:</strong> ${offer.game}
@@ -779,7 +828,7 @@ function loadChatMessages() {
     }
 
     messages.forEach(message => {
-        if (!message.text) return;
+        if (!message.text && !message.image) return;
 
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
@@ -789,8 +838,15 @@ function loadChatMessages() {
             minute: '2-digit'
         }) : '';
 
+        let messageContent = '';
+        if (message.type === 'image' && message.image) {
+            messageContent = `<img src="${message.image}" alt="صورة" class="chat-message-image" onclick="showImageModal('${message.image}')">`;
+        } else if (message.text) {
+            messageContent = `<div class="message-text">${message.text}</div>`;
+        }
+
         messageDiv.innerHTML = `
-            <div class="message-text">${message.text}</div>
+            ${messageContent}
             ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
         container.appendChild(messageDiv);
@@ -812,7 +868,8 @@ async function sendMessage() {
         senderName: currentUser.name,
         senderAvatar: currentUser.avatar,
         text: text,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        type: 'text'
     };
 
     if (!conversations[chatId]) {
@@ -823,6 +880,70 @@ async function sendMessage() {
     saveConversationsToStorage();
     loadChatMessages();
     input.value = '';
+    
+    // Notify other users about new message
+    notifyNewMessage(currentChatPartner.id);
+}
+
+async function sendImageMessage() {
+    const imageFile = document.getElementById('chatImage').files[0];
+    
+    if (!imageFile || !currentChatPartner) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const chatId = getChatId(currentUser.id, currentChatPartner.id);
+
+        const message = {
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            senderAvatar: currentUser.avatar,
+            image: e.target.result,
+            timestamp: new Date().toISOString(),
+            type: 'image'
+        };
+
+        if (!conversations[chatId]) {
+            conversations[chatId] = [];
+        }
+
+        conversations[chatId].push(message);
+        saveConversationsToStorage();
+        loadChatMessages();
+        
+        // Clear the file input
+        document.getElementById('chatImage').value = '';
+        
+        // Notify other users about new message
+        notifyNewMessage(currentChatPartner.id);
+    };
+    reader.readAsDataURL(imageFile);
+}
+
+function showImageModal(imageSrc) {
+    const modal = document.createElement('div');
+    modal.className = 'image-modal';
+    modal.innerHTML = `
+        <img src="${imageSrc}" alt="صورة مكبرة">
+        <span class="image-modal-close">&times;</span>
+    `;
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal || e.target.className === 'image-modal-close') {
+            modal.remove();
+        }
+    });
+    
+    document.body.appendChild(modal);
+}
+
+function notifyNewMessage(recipientId) {
+    // This would typically send a notification to the recipient
+    // For now, we'll just trigger a storage event to update other tabs
+    localStorage.setItem('newMessageNotification', JSON.stringify({
+        recipientId: recipientId,
+        timestamp: new Date().toISOString()
+    }));
 }
 
 function getChatId(userId1, userId2) {

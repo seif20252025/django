@@ -168,9 +168,14 @@ app.post('/api/offers', (req, res) => {
         offer.likedBy = offer.likedBy || [];
         offer.timestamp = new Date().toISOString();
         
+        // Handle image data if present
+        if (offer.image && offer.image.length > 5000000) { // 5MB limit
+            return res.status(400).json({ success: false, error: 'Image too large (max 5MB)' });
+        }
+        
         globalOffers.unshift(offer);
         saveOffersToFile(); // حفظ في الملف
-        console.log(`New offer added: ${offer.game} by ${offer.userName}. Total offers: ${globalOffers.length}`);
+        console.log(`New offer added: ${offer.game} by ${offer.userName}${offer.image ? ' (with image)' : ''}. Total offers: ${globalOffers.length}`);
         res.json({ success: true, offers: globalOffers });
     } catch (error) {
         console.error('Error saving offer:', error);
