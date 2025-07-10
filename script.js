@@ -15,7 +15,7 @@ let userSettings = {
 let registeredMembers = [];
 let hasNewMessages = false;
 
-// API Base URL - adjust for your environment
+// API Base URL
 const API_BASE_URL = window.location.origin;
 
 // Check if server is running
