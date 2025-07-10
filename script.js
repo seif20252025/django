@@ -1003,7 +1003,8 @@ function showNotification(message) {
         right: 20px;
         background: linear-gradient(45deg, #00ff80, #00cc66);
         color: white;
-        padding: 1rem 2rem;
+        padding: 1rem```python
+ 2rem;
         border-radius: 10px;
         box-shadow: 0 10px 25px rgba(0, 255, 128, 0.4);
         z-index: 3000;
@@ -1045,117 +1046,139 @@ let adInitialized = false;
 let periodicAdInterval = null;
 
 function initializeAds() {
-    // Initialize AdSense on page load only once
-    if (!adInitialized) {
-        setTimeout(() => {
-            try {
-                const existingAds = document.querySelectorAll('.adsbygoogle');
-                existingAds.forEach(ad => {
-                    if (!ad.dataset.adsbygoogleStatus) {
-                        (adsbygoogle = window.adsbygoogle || []).push({});
-                    }
-                });
-                adInitialized = true;
-                console.log('AdSense initialized successfully');
-            } catch (error) {
-                console.error('AdSense initialization error:', error);
-            }
-        }, 3000);
-    }
+    try {
+        // Check if adsbygoogle is loaded
+        if (typeof window.adsbygoogle !== 'undefined') {
+            // Clear any existing ads first
+            const existingAds = document.querySelectorAll('.adsbygoogle');
+            existingAds.forEach(ad => {
+                if (ad.getAttribute('data-adsbygoogle-status')) {
+                    ad.removeAttribute('data-adsbygoogle-status');
+                }
+            });
 
-    // Show periodic ads every 5 minutes - only start once
-    if (!periodicAdInterval) {
-        periodicAdInterval = setInterval(showPeriodicAd, 5 * 60 * 1000); // 5 minutes in milliseconds
+            // Initialize main ad on page load
+            const mainAd = document.querySelector('.adsbygoogle');
+            if (mainAd && !mainAd.getAttribute('data-adsbygoogle-status')) {
+                try {
+                    (window.adsbygoogle = window.adsbygoogle || []).push({});
+                } catch (adError) {
+                    console.warn('Main ad initialization failed:', adError);
+                }
+            }
+
+            // Show periodic ads every 5 minutes
+            let adInterval = setInterval(() => {
+                try {
+                    showPeriodicAd();
+                } catch (adError) {
+                    console.warn('Periodic ad failed:', adError);
+                }
+            }, 300000); // 5 minutes
+
+            // Clear interval on page unload
+            window.addEventListener('beforeunload', () => {
+                if (adInterval) {
+                    clearInterval(adInterval);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('AdSense initialization error:', error);
     }
 }
 
 function showPeriodicAd() {
-    // Check if there's already an ad modal open
-    if (document.getElementById('periodicAdModal')) {
+    // Check if there's already an ad showing
+    if (document.querySelector('.ad-overlay')) {
         return;
     }
 
-    const adModal = document.createElement('div');
-    adModal.className = 'modal active';
-    adModal.id = 'periodicAdModal';
+    try {
+        // Create ad overlay
+        const adOverlay = document.createElement('div');
+        adOverlay.className = 'ad-overlay';
+        adOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        `;
 
-    // Create unique ad slot ID
-    const uniqueAdId = 'periodic-ad-' + Date.now();
+        const adContainer = document.createElement('div');
+        adContainer.style.cssText = `
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+        `;
 
-    adModal.innerHTML = `
-        <div class="modal-content ad-modal">
-            <div class="modal-header">
-                <h3>إعلان 📢</h3>
-                <button class="close-modal" onclick="closePeriodicAd()" id="closeAdBtn" disabled>×</button>
-                <span class="ad-timer" id="adTimer">5</span>
+        // Show fallback ad instead of trying AdSense again
+        adContainer.innerHTML = `
+            <div style="margin-bottom: 1rem;">
+                <span id="adTimer" style="background: #ff4444; color: white; padding: 0.5rem; border-radius: 5px; font-weight: bold;">5</span>
             </div>
-            <div class="modal-body">
-                <div class="ad-container">
-                    <ins class="adsbygoogle ${uniqueAdId}"
-                         style="display:block; min-width: 300px; min-height: 250px;"
-                         data-ad-client="ca-pub-1404937854433871"
-                         data-ad-slot="3016283172"
-                         data-ad-format="auto"
-                         data-full-width-responsive="true"></ins>
-                </div>
-                <p class="ad-message">يمكنك إغلاق الإعلان بعد <span id="countdown">5</span> ثوانٍ</p>
+            <div style="background: linear-gradient(45deg, #00bfff, #004e92); padding: 2rem; border-radius: 10px; text-align: center; color: white;">
+                <h3>🎮 GAMES SHOP 🎮</h3>
+                <p>أفضل موقع لبيع وشراء عروض الألعاب</p>
+                <p>انضم إلى مجتمعنا الآن!</p>
+                <p>احصل على VIP واستمتع بالمميزات الحصرية!</p>
             </div>
-        </div>
-    `;
+            <button id="closeAdBtn" style="
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: #ccc;
+                border: none;
+                padding: 0.5rem;
+                border-radius: 5px;
+                cursor: not-allowed;
+                color: #666;
+            " disabled>إغلاق</button>
+        `;
 
-    document.body.appendChild(adModal);
+        adOverlay.appendChild(adContainer);
+        document.body.appendChild(adOverlay);
 
-    // Wait for modal to be rendered before pushing ad
-    setTimeout(() => {
-        try {
-            const newAd = document.querySelector(`.${uniqueAdId}`);
-            if (newAd && !newAd.dataset.adsbygoogleStatus) {
-                (adsbygoogle = window.adsbygoogle || []).push({});
-                console.log('Periodic ad loaded successfully');
+        // Close ad function
+        const closeAd = () => {
+            if (adOverlay && adOverlay.parentNode) {
+                adOverlay.parentNode.removeChild(adOverlay);
             }
-        } catch (error) {
-            console.error('AdSense periodic ad error:', error);
-            // Show fallback content if ad fails
-            const adContainer = document.querySelector('.ad-container');
-            if (adContainer) {
-                adContainer.innerHTML = `
-                    <div style="background: linear-gradient(45deg, #00bfff, #004e92); padding: 2rem; border-radius: 10px; text-align: center; color: white;">
-                        <h3>🎮 GAMES SHOP 🎮</h3>
-                        <p>أفضل موقع لبيع وشراء عروض الألعاب</p>
-                        <p>انضم إلى مجتمعنا الآن!</p>
-                    </div>
-                `;
+        };
+
+        // Countdown timer for ad
+        let countdown = 5;
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            const timerElement = document.getElementById('adTimer');
+
+            if (timerElement) timerElement.textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                const closeBtn = document.getElementById('closeAdBtn');
+                if (closeBtn) {
+                    closeBtn.disabled = false;
+                    closeBtn.style.background = '#00bfff';
+                    closeBtn.style.color = 'white';
+                    closeBtn.style.cursor = 'pointer';
+                    closeBtn.addEventListener('click', closeAd);
+                }
+                if (timerElement) timerElement.style.display = 'none';
             }
-        }
-    }, 500);
+        }, 1000);
 
-    // Countdown timer for ad
-    let countdown = 5;
-    const countdownInterval = setInterval(() => {
-        countdown--;
-        const countdownElement = document.getElementById('countdown');
-        const timerElement = document.getElementById('adTimer');
-
-        if (countdownElement) countdownElement.textContent = countdown;
-        if (timerElement) timerElement.textContent = countdown;
-
-        if (countdown <= 0) {
-            clearInterval(countdownInterval);
-            const closeBtn = document.getElementById('closeAdBtn');
-            if (closeBtn) {
-                closeBtn.disabled = false;
-                closeBtn.style.color = '#00bfff';
-                closeBtn.style.cursor = 'pointer';
-            }
-            if (timerElement) timerElement.style.display = 'none';
-        }
-    }, 1000);
-}
-
-function closePeriodicAd() {
-    const modal = document.getElementById('periodicAdModal');
-    if (modal) {
-        modal.remove();
+    } catch (error) {
+        console.error('Periodic ad error:', error);
     }
 }
 
