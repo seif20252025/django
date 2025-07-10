@@ -998,6 +998,109 @@ textarea.form-control {
     background: linear-gradient(45deg, #00ff80, #00cc66);
 }
 
+/* Improved Chat Message Styling */
+.message-text {
+    margin-bottom: 0.3rem;
+    line-height: 1.4;
+}
+
+.message-time {
+    opacity: 0.7;
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 0.3rem;
+}
+
+.no-conversations {
+    text-align: center;
+    color: #00bfff;
+    padding: 3rem 2rem;
+}
+
+.no-conversations i {
+    display: block;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.conversation-item {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0, 191, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.conversation-item:hover {
+    background: rgba(0, 191, 255, 0.1);
+}
+
+.conversation-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.conversation-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #00bfff;
+}
+
+.conversation-info {
+    flex: 1;
+}
+
+.conversation-name {
+    font-weight: bold;
+    color: #00bfff;
+    margin-bottom: 0.3rem;
+}
+
+.conversation-last-message {
+    color: #ffffff;
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+.conversation-time {
+    color: #00bfff;
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.conversation-indicator {
+    color: #00bfff;
+    opacity: 0.5;
+}
+
+.block-user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0, 191, 255, 0.2);
+}
+
+.block-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.block-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #00bfff;
+}
+
+.block-user-name {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+
 .block-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);

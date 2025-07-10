@@ -5,7 +5,7 @@ let offers = [];
 let conversations = {};
 let currentChatPartner = null;
 let selectedAvatar = 1;
-let userVexBalance = 1000; // Starting balance
+let userVexBalance = 0; // Starting balance
 let userSettings = {
     allowMessages: true,
     blockedUsers: []
@@ -377,23 +377,35 @@ function startChat(partnerName, partnerId) {
 }
 
 function loadChatMessages() {
+    if (!currentChatPartner) return;
+    
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
     const messages = conversations[chatId] || [];
     const container = document.getElementById('chatMessages');
     
+    if (!container) return;
+    
     container.innerHTML = '';
     
     if (messages.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: #00bfff;">ابدأ المحادثة! 💬</div>';
+        container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">ابدأ المحادثة! 💬</div>';
         return;
     }
     
     messages.forEach(message => {
+        if (!message.text) return; // Skip empty messages
+        
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
+        
+        const messageTime = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : '';
+        
         messageDiv.innerHTML = `
-            <div>${message.text}</div>
-            <small style="opacity: 0.7; font-size: 0.8rem;">${new Date(message.timestamp).toLocaleTimeString('ar-EG')}</small>
+            <div class="message-text">${message.text}</div>
+            ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
         container.appendChild(messageDiv);
     });
@@ -415,6 +427,8 @@ function sendMessage() {
     const message = {
         id: Date.now(),
         senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderAvatar: currentUser.avatar,
         text: text,
         timestamp: new Date().toISOString()
     };
@@ -443,20 +457,39 @@ function loadMessagesList() {
     
     container.innerHTML = '';
     
-    if (userChats.length === 0) {
+    // Filter chats that have actual messages
+    const activeChats = userChats.filter(chatId => {
+        const messages = conversations[chatId];
+        return messages && messages.length > 0;
+    });
+    
+    if (activeChats.length === 0) {
         container.innerHTML = '<div class="no-conversations"><i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>لا توجد محادثات حالياً</p><p style="opacity: 0.7; font-size: 0.9rem;">ابدأ محادثة من خلال الضغط على "مراسلة الشخص" في أي عرض</p></div>';
         return;
     }
     
-    userChats.forEach(chatId => {
+    activeChats.forEach(chatId => {
         const messages = conversations[chatId];
-        if (messages.length === 0) return;
-        
         const lastMessage = messages[messages.length - 1];
         const otherUserId = chatId.split('-').find(id => id !== currentUser.id.toString());
+        
+        // Get user info from saved chats or offers
+        let otherUserName = 'مستخدم غير معروف';
+        let otherUserAvatar = 1;
+        
+        // First try to find from offers
         const offer = offers.find(o => o.userId == otherUserId);
-        const otherUserName = offer ? offer.userName : 'مستخدم غير معروف';
-        const otherUserAvatar = offer ? offer.userAvatar : 1;
+        if (offer) {
+            otherUserName = offer.userName;
+            otherUserAvatar = offer.userAvatar;
+        } else {
+            // Try to get from message history
+            const userMessage = messages.find(m => m.senderId != currentUser.id);
+            if (userMessage && userMessage.senderName) {
+                otherUserName = userMessage.senderName;
+                otherUserAvatar = userMessage.senderAvatar || 1;
+            }
+        }
         
         const messageItem = document.createElement('div');
         messageItem.className = 'conversation-item';
@@ -625,19 +658,36 @@ function loadBlockList() {
     
     container.innerHTML = '';
     
-    if (userChats.length === 0) {
+    // Filter chats that have actual messages
+    const activeChats = userChats.filter(chatId => {
+        const messages = conversations[chatId];
+        return messages && messages.length > 0;
+    });
+    
+    if (activeChats.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا يوجد أشخاص للحظر</div>';
         return;
     }
     
-    userChats.forEach(chatId => {
+    activeChats.forEach(chatId => {
         const messages = conversations[chatId];
-        if (messages.length === 0) return;
-        
         const otherUserId = parseInt(chatId.split('-').find(id => id !== currentUser.id.toString()));
+        
+        // Get user info
+        let otherUserName = 'مستخدم غير معروف';
+        let otherUserAvatar = 1;
+        
         const offer = offers.find(o => o.userId == otherUserId);
-        const otherUserName = offer ? offer.userName : 'مستخدم غير معروف';
-        const otherUserAvatar = offer ? offer.userAvatar : 1;
+        if (offer) {
+            otherUserName = offer.userName;
+            otherUserAvatar = offer.userAvatar;
+        } else {
+            const userMessage = messages.find(m => m.senderId != currentUser.id);
+            if (userMessage && userMessage.senderName) {
+                otherUserName = userMessage.senderName;
+                otherUserAvatar = userMessage.senderAvatar || 1;
+            }
+        }
         
         const isBlocked = userSettings.blockedUsers.includes(otherUserId);
         
