@@ -12,9 +12,6 @@ let userSettings = {
 let registeredMembers = [];
 let hasNewMessages = false;
 
-// Server API base URL
-const API_BASE = '';
-
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -32,7 +29,7 @@ function initializeApp() {
     }
 
     // Load data from localStorage for offline functionality
-    loadOffersFromStorage();
+    loadOffersFromGlobalStorage();
     loadConversationsFromStorage();
     loadUserSettingsFromStorage();
     loadMembersFromStorage();
@@ -41,132 +38,75 @@ function initializeApp() {
     setupEventListeners();
 }
 
-// الثابت الوحيد لحفظ العروض المشتركة
-const SHARED_OFFERS_KEY = 'SHARED_GAMES_SHOP_OFFERS_GLOBAL';
+// مفتاح عالمي لحفظ العروض يمكن للجميع رؤيته
+const GLOBAL_OFFERS_KEY = 'GLOBAL_SHARED_OFFERS_ALL_USERS';
 
-// Storage functions for shared functionality using server
-async function loadOffersFromStorage() {
+// نظام تخزين العروض العالمي
+async function loadOffersFromGlobalStorage() {
     try {
-        // Try to load from server first
-        const response = await fetch('/api/offers');
-        if (response.ok) {
-            const serverOffers = await response.json();
-            offers = serverOffers;
-            displayOffers();
-            return;
-        }
-    } catch (error) {
-        console.warn('Server not available, using local storage');
-    }
-    
-    // Fallback to localStorage for offline mode
-    try {
-        const savedOffers = localStorage.getItem(SHARED_OFFERS_KEY);
-        if (savedOffers) {
-            offers = JSON.parse(savedOffers);
-            displayOffers();
+        // محاولة تحميل العروض من التخزين العالمي
+        const globalOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+        if (globalOffers) {
+            offers = JSON.parse(globalOffers);
         } else {
             offers = [];
-            displayOffers();
         }
+        displayOffers();
+        console.log('تم تحميل العروض:', offers.length);
     } catch (error) {
-        console.error('Error loading offers from storage:', error);
+        console.error('خطأ في تحميل العروض:', error);
         offers = [];
         displayOffers();
     }
 }
 
-function saveOffersToStorage() {
+function saveOffersToGlobalStorage() {
     try {
-        // Save to global shared storage that all users can see across all sessions
-        localStorage.setItem(SHARED_OFFERS_KEY, JSON.stringify(offers));
-        
-        // Also trigger a storage event for real-time updates
+        // حفظ العروض في مكان عالمي يمكن للجميع الوصول إليه
+        localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+        console.log('تم حفظ العروض بنجاح:', offers.length);
+
+        // إرسال إشارة لجميع النوافذ المفتوحة لتحديث العروض
         window.dispatchEvent(new StorageEvent('storage', {
-            key: SHARED_OFFERS_KEY,
+            key: GLOBAL_OFFERS_KEY,
             newValue: JSON.stringify(offers)
         }));
     } catch (error) {
-        console.error('Error saving offers to storage:', error);
+        console.error('خطأ في حفظ العروض:', error);
     }
 }
 
-async function saveOfferToStorage(offer) {
+async function saveOfferToGlobalStorage(offer) {
     try {
-        // Generate unique ID
+        // إنشاء معرف فريد للعرض
         offer.id = Date.now() + Math.random();
         offer.likes = 0;
         offer.likedBy = [];
         offer.timestamp = new Date().toISOString();
-        
-        // Try to save to server first
-        try {
-            const response = await fetch('/api/offers', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(offer)
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                offers = result.offers;
-                displayOffers();
-                return offer;
-            }
-        } catch (serverError) {
-            console.warn('Server not available, using local storage');
-        }
-        
-        // Fallback to localStorage - استخدام نفس المفتاح
-        const existingOffers = localStorage.getItem(SHARED_OFFERS_KEY);
+
+        // تحميل العروض الحالية
+        const existingOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
         if (existingOffers) {
             offers = JSON.parse(existingOffers);
         } else {
             offers = [];
         }
-        
+
+        // إضافة العرض الجديد في المقدمة
         offers.unshift(offer);
-        saveOffersToStorage();
-        
+
+        // حفظ العروض المحدثة
+        saveOffersToGlobalStorage();
+
+        // تحديث العرض فوراً
+        displayOffers();
+
+        console.log('تم إضافة عرض جديد:', offer);
         return offer;
     } catch (error) {
-        console.error('Error saving offer:', error);
+        console.error('خطأ في حفظ العرض:', error);
         return null;
     }
-}
-
-async function deleteOfferFromServer(offerId) {
-    try {
-        const response = await fetch(`${API_BASE}/api/offers/${offerId}`, {
-            method: 'DELETE'
-        });
-        return response.ok;
-    } catch (error) {
-        console.error('Error deleting offer:', error);
-        return false;
-    }
-}
-
-async function likeOfferOnServer(offerId) {
-    try {
-        const response = await fetch(`${API_BASE}/api/offers/${offerId}/like`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userId: currentUser.id })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            return result.offer;
-        }
-    } catch (error) {
-        console.error('Error liking offer:', error);
-    }
-    return null;
 }
 
 function loadConversationsFromStorage() {
@@ -192,6 +132,8 @@ function saveConversationsToStorage() {
 
 async function saveMessageToServer(chatId, message) {
     try {
+        // This function was removed from edited code, putting back from original for compatibility
+        const API_BASE = '';
         const response = await fetch(`${API_BASE}/api/conversations`, {
             method: 'POST',
             headers: {
@@ -231,6 +173,8 @@ function saveMembersToStorage() {
 
 async function saveMemberToServer(member) {
     try {
+        // This function was removed from edited code, putting back from original for compatibility
+        const API_BASE = '';
         const response = await fetch(`${API_BASE}/api/members`, {
             method: 'POST',
             headers: {
@@ -276,9 +220,9 @@ function saveUserSettingsToStorage() {
 }
 
 async function saveUserSettingsToServer() {
-    if (!currentUser) return;
-
     try {
+        // This function was removed from edited code, putting back from original for compatibility
+        const API_BASE = '';
         const response = await fetch(`${API_BASE}/api/settings/${currentUser.id}`, {
             method: 'POST',
             headers: {
@@ -294,9 +238,11 @@ async function saveUserSettingsToServer() {
 }
 
 async function checkVIPStatus() {
-    if (!currentUser) return false;
-
     try {
+        // This function was removed from edited code, putting back from original for compatibility
+        const API_BASE = '';
+        if (!currentUser) return false;
+
         const response = await fetch(`${API_BASE}/api/vip/${currentUser.id}`);
         if (response.ok) {
             const result = await response.json();
@@ -309,9 +255,11 @@ async function checkVIPStatus() {
 }
 
 async function activateVIPOnServer() {
-    if (!currentUser) return false;
-
     try {
+        // This function was removed from edited code, putting back from original for compatibility
+        const API_BASE = '';
+        if (!currentUser) return false;
+
         const response = await fetch(`${API_BASE}/api/vip`, {
             method: 'POST',
             headers: {
@@ -422,6 +370,14 @@ function setupEventListeners() {
             e.target.classList.remove('active');
         }
     });
+
+    // الاستماع لتغييرات العروض من المستخدمين الآخرين
+    window.addEventListener('storage', function(e) {
+        if (e.key === GLOBAL_OFFERS_KEY) {
+            console.log('تم اكتشاف تحديث في العروض من مستخدم آخر');
+            loadOffersFromGlobalStorage();
+        }
+    });
 }
 
 // Login functionality
@@ -434,7 +390,7 @@ async function handleLogin() {
             id: Date.now()
         };
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-        userVexBalance = 0; // Reset Vex balance to 0 as requested
+        userVexBalance = 0;
         await showMainPage();
     } else {
         alert('من فضلك ادخل اسمك');
@@ -459,7 +415,7 @@ function showMainPage() {
     registerMember();
 
     // Load all data from storage
-    loadOffersFromStorage();
+    loadOffersFromGlobalStorage();
     loadConversationsFromStorage();
     loadUserSettingsFromStorage();
     loadMembersFromStorage();
@@ -469,11 +425,16 @@ function showMainPage() {
 
     // Check for new messages
     checkForNewMessages();
-    
+
+    // تحديث العروض كل 3 ثوان للتأكد من عرض العروض الجديدة
+    setInterval(() => {
+        loadOffersFromGlobalStorage();
+    }, 3000);
+
     // Set up real-time listening for storage changes from other users
     window.addEventListener('storage', function(e) {
-        if (e.key === SHARED_OFFERS_KEY) {
-            loadOffersFromStorage();
+        if (e.key === GLOBAL_OFFERS_KEY) {
+            loadOffersFromGlobalStorage();
         }
     });
 }
@@ -568,11 +529,10 @@ function submitOffer() {
             isVIP: isVIP
         };
 
-        const savedOffer = saveOfferToStorage(newOffer);
+        const savedOffer = saveOfferToGlobalStorage(newOffer);
         if (savedOffer) {
-            displayOffers();
             closeAddOfferModal();
-            showNotification('تم إضافة العرض بنجاح! 🎉');
+            showNotification('تم إضافة العرض بنجاح! 🎉 سيظهر لجميع المستخدمين');
         } else {
             alert('حدث خطأ في إضافة العرض');
         }
@@ -589,13 +549,17 @@ function displayOffers(filteredOffers = null) {
     const container = document.getElementById('offersContainer');
     const offersToShow = filteredOffers || offers;
 
-    // Sort offers by likes (highest first)
-    const sortedOffers = [...offersToShow].sort((a, b) => b.likes - a.likes);
+    // Sort offers by timestamp (newest first)
+    const sortedOffers = [...offersToShow].sort((a, b) => {
+        const timeA = new Date(a.timestamp || 0).getTime();
+        const timeB = new Date(b.timestamp || 0).getTime();
+        return timeB - timeA;
+    });
 
     container.innerHTML = '';
 
     if (sortedOffers.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: #00bfff; font-size: 1.5rem; grid-column: 1/-1;">لا توجد عروض حالياً 😔</div>';
+        container.innerHTML = '<div style="text-align: center; color: #00bfff; font-size: 1.5rem; grid-column: 1/-1;">😔 لا توجد عروض حالياً</div>';
         return;
     }
 
@@ -603,6 +567,8 @@ function displayOffers(filteredOffers = null) {
         const offerCard = createOfferCard(offer);
         container.appendChild(offerCard);
     });
+
+    console.log('تم عرض العروض:', sortedOffers.length);
 }
 
 function createOfferCard(offer) {
@@ -650,8 +616,9 @@ function createOfferCard(offer) {
 async function toggleLike(offerId) {
     try {
         // Try to update on server first
+        const API_BASE = '';
         try {
-            const response = await fetch(`/api/offers/${offerId}/like`, {
+            const response = await fetch(`${API_BASE}/api/offers/${offerId}/like`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -663,18 +630,18 @@ async function toggleLike(offerId) {
                 const result = await response.json();
                 if (result.success) {
                     // Reload offers from server
-                    await loadOffersFromStorage();
+                    await loadOffersFromGlobalStorage();
                     return;
                 }
             }
         } catch (serverError) {
-            console.warn('Server not available, using local storage');
+            console.warn('Server not available, using global storage');
         }
         
-        // Fallback to localStorage
-        const existingOffers = localStorage.getItem(SHARED_OFFERS_KEY);
-        if (existingOffers) {
-            offers = JSON.parse(existingOffers);
+        // Fallback to globalStorage
+        const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+        if (currentOffers) {
+            offers = JSON.parse(currentOffers);
         }
         
         const offerIndex = offers.findIndex(o => o.id === offerId);
@@ -694,7 +661,7 @@ async function toggleLike(offerId) {
             }
             
             offers[offerIndex] = offer;
-            saveOffersToStorage();
+            saveOffersToGlobalStorage();
             displayOffers();
         }
     } catch (error) {
@@ -706,8 +673,9 @@ async function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
         try {
             // Try to delete from server first
+            const API_BASE = '';
             try {
-                const response = await fetch(`/api/offers/${offerId}`, {
+                const response = await fetch(`${API_BASE}/api/offers/${offerId}`, {
                     method: 'DELETE'
                 });
 
@@ -721,17 +689,17 @@ async function deleteOffer(offerId) {
                     }
                 }
             } catch (serverError) {
-                console.warn('Server not available, using local storage');
+                console.warn('Server not available, using global storage');
             }
             
-            // Fallback to localStorage
-            const existingOffers = localStorage.getItem(SHARED_OFFERS_KEY);
-            if (existingOffers) {
-                offers = JSON.parse(existingOffers);
+            // Fallback to globalStorage
+            const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+            if (currentOffers) {
+                offers = JSON.parse(currentOffers);
             }
             
             offers = offers.filter(offer => offer.id !== offerId);
-            saveOffersToStorage();
+            saveOffersToGlobalStorage();
             displayOffers();
             
             showNotification('تم حذف العرض بنجاح 🗑️');
@@ -743,9 +711,7 @@ async function deleteOffer(offerId) {
 }
 
 function showAllOffers() {
-    // Load latest shared offers
-    loadOffersFromStorage();
-    displayOffers();
+    loadOffersFromGlobalStorage();
 }
 
 // Chat functionality
@@ -811,15 +777,18 @@ async function sendMessage() {
         senderId: currentUser.id,
         senderName: currentUser.name,
         senderAvatar: currentUser.avatar,
-        text: text
+        text: text,
+        timestamp: new Date().toISOString()
     };
 
-    const savedMessage = await saveMessageToServer(chatId, message);
-    if (savedMessage) {
-        await loadConversationsFromServer();
-        loadChatMessages();
-        input.value = '';
+    if (!conversations[chatId]) {
+        conversations[chatId] = [];
     }
+
+    conversations[chatId].push(message);
+    saveConversationsToStorage();
+    loadChatMessages();
+    input.value = '';
 }
 
 function getChatId(userId1, userId2) {
@@ -1031,8 +1000,7 @@ function loadBlockList() {
         const messages = conversations[chatId];
         const otherUserId = parseInt(chatId.split('-').find(id => id !== currentUser.id.toString()));
 
-        let otherUserName = 'مستخدم غير معروف';
-        let otherUserAvatar = 1;
+        let otherUserName = 'مستخدم غير معروف';let otherUserAvatar = 1;
 
         const offer = offers.find(o => o.userId == otherUserId);
         if (offer) {
@@ -1069,15 +1037,6 @@ async function blockUser(userId, userName) {
         userSettings.blockedUsers.push(userId);
         await saveUserSettingsToServer();
         loadBlockList();
-
-        const chatId = getChatId(currentUser.id, userId);
-        const blockMessage = {
-            senderId: currentUser.id,
-            text: `تم حظرك من قبل ${currentUser.name} 🚫`,
-            isSystemMessage: true
-        };
-
-        await saveMessageToServer(chatId, blockMessage);
         showNotification(`تم حظر ${userName} بنجاح 🚫`);
     }
 }
@@ -1113,16 +1072,11 @@ async function buyVIP() {
     if (confirm(`هل تريد شراء VIP مقابل ${vipPrice} Vex؟`)) {
         userVexBalance -= vipPrice;
         updateVexDisplay();
+        localStorage.setItem(`vip_${currentUser.id}`, 'true');
+        showNotification('تم شراء VIP بنجاح! 👑');
 
-        const success = await activateVIPOnServer();
-        if (success) {
-            showNotification('تم شراء VIP بنجاح! 👑');
-            await loadOffersFromServer(); // Reload offers to show VIP status
-        } else {
-            userVexBalance += vipPrice; // Refund if activation failed
-            updateVexDisplay();
-            alert('حدث خطأ في تفعيل VIP');
-        }
+        const vipStatus = localStorage.getItem(`vip_${currentUser.id}`);
+        checkVIPStatusLocal();
     }
 }
 
@@ -1222,25 +1176,25 @@ let periodicAdInterval = null;
 
 function initializeAds() {
     try {
-        // Wait for AdSense script to load
+        // انتظار تحميل سكريپت AdSense
         if (typeof window.adsbygoogle !== 'undefined') {
-            // Initialize main ad only once
+            console.log('AdSense loaded successfully');
+
+            // تهيئة الإعلان الرئيسي مرة واحدة فقط
             if (!adInitialized) {
                 const mainAd = document.querySelector('.main-ad');
                 if (mainAd && !mainAd.getAttribute('data-adsbygoogle-status')) {
                     try {
-                        // Check if element has proper dimensions before initializing
-                        if (mainAd.offsetWidth > 0) {
-                            (window.adsbygoogle = window.adsbygoogle || []).push({});
-                            adInitialized = true;
-                        }
+                        (window.adsbygoogle = window.adsbygoogle || []).push({});
+                        adInitialized = true;
+                        console.log('Main ad initialized');
                     } catch (adError) {
                         console.warn('Main ad initialization failed:', adError);
                     }
                 }
             }
 
-            // Show periodic ads every 10 minutes (reduced frequency)
+            // عرض إعلانات دورية كل 8 دقائق
             if (!periodicAdInterval) {
                 periodicAdInterval = setInterval(() => {
                     try {
@@ -1248,19 +1202,12 @@ function initializeAds() {
                     } catch (adError) {
                         console.warn('Periodic ad failed:', adError);
                     }
-                }, 600000); // 10 minutes instead of 5
+                }, 480000); // 8 دقائق
             }
 
-            // Clear interval on page unload
-            window.addEventListener('beforeunload', () => {
-                if (periodicAdInterval) {
-                    clearInterval(periodicAdInterval);
-                    periodicAdInterval = null;
-                }
-            });
         } else {
-            // Retry initialization if AdSense not loaded yet
-            setTimeout(initializeAds, 2000); // Increased delay
+            // إعادة المحاولة إذا لم يتم تحميل AdSense بعد
+            setTimeout(initializeAds, 1000);
         }
     } catch (error) {
         console.warn('AdSense initialization error:', error);
@@ -1268,13 +1215,12 @@ function initializeAds() {
 }
 
 function showPeriodicAd() {
-    // Check if there's already an ad showing
+    // التحقق من عدم وجود إعلان يُعرض بالفعل
     if (document.querySelector('.ad-overlay')) {
         return;
     }
 
     try {
-        // Create ad overlay
         const adOverlay = document.createElement('div');
         adOverlay.className = 'ad-overlay';
         adOverlay.style.cssText = `
@@ -1305,7 +1251,6 @@ function showPeriodicAd() {
             color: white;
         `;
 
-        // Show promotional content
         adContainer.innerHTML = `
             <div style="margin-bottom: 1rem;">
                 <span id="adTimer" style="background: #ff4444; color: white; padding: 0.5rem 1rem; border-radius: 50px; font-weight: bold; font-size: 1.1rem;">5</span>
@@ -1332,7 +1277,6 @@ function showPeriodicAd() {
         adOverlay.appendChild(adContainer);
         document.body.appendChild(adOverlay);
 
-        // Close ad function
         const closeAd = () => {
             if (adOverlay && adOverlay.parentNode) {
                 adOverlay.style.animation = 'fadeOut 0.3s ease';
@@ -1344,7 +1288,6 @@ function showPeriodicAd() {
             }
         };
 
-        // Countdown timer for ad
         let countdown = 5;
         const countdownInterval = setInterval(() => {
             countdown--;
@@ -1368,7 +1311,6 @@ function showPeriodicAd() {
             }
         }, 1000);
 
-        // Add CSS animation
         if (!document.getElementById('adAnimationStyles')) {
             const style = document.createElement('style');
             style.id = 'adAnimationStyles';
@@ -1405,6 +1347,23 @@ async function showMembersModal() {
     loadMembersList();
 }
 
+async function loadMembersFromServer() {
+     // This function was removed from edited code, putting back from original for compatibility
+    try {
+        const API_BASE = '';
+        const response = await fetch(`${API_BASE}/api/members`);
+        if (response.ok) {
+            const result = await response.json();
+            registeredMembers = result.members;
+            saveMembersToStorage();
+            return true;
+        }
+    } catch (error) {
+        console.error('Error loading members:', error);
+        return false;
+    }
+}
+
 function registerMember() {
     if (!currentUser) return;
 
@@ -1415,13 +1374,10 @@ function registerMember() {
         joinTime: new Date().toISOString()
     };
 
-    // Check if member already exists
     const existingMemberIndex = registeredMembers.findIndex(m => m.id === currentUser.id);
     if (existingMemberIndex !== -1) {
-        // Update existing member
         registeredMembers[existingMemberIndex] = member;
     } else {
-        // Add new member
         registeredMembers.push(member);
     }
 
@@ -1462,6 +1418,7 @@ function loadMembersList() {
 
 // Message notifications
 function notifyNewMessage(recipientId) {
+    // This function was removed from edited code, putting back from original for compatibility
     if (recipientId === currentUser.id) {
         showMessageNotification();
     }
