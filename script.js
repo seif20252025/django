@@ -1,6 +1,4 @@
-Analyzing the original code and changes, applying the required changes to address the console issue and ensure the global trading system works correctly, integrating API base URL and health check functionalities, and improving offer loading and saving processes.
-```
-```replit_final_file
+
 // Global variables
 let currentUser = null;
 let offers = [];
