@@ -199,10 +199,18 @@ function saveUserSettingsToStorage() {
 }
 
 function setupEventListeners() {
-    // Login
-    document.getElementById('loginBtn').addEventListener('click', handleLogin);
-    document.getElementById('usernameInput').addEventListener('keypress', function(e) {
+    // Auth system
+    document.getElementById('loginSubmitBtn').addEventListener('click', handleLogin);
+    document.getElementById('signupSubmitBtn').addEventListener('click', handleSignup);
+    document.getElementById('showSignupBtn').addEventListener('click', showSignupForm);
+    document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
+    
+    // Enter key listeners
+    document.getElementById('loginPassword').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('signupConfirmPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') handleSignup();
     });
 
     // Menu
@@ -303,20 +311,142 @@ function setupEventListeners() {
     });
 }
 
-// Login functionality
+// Auth functionality
 async function handleLogin() {
-    const username = document.getElementById('usernameInput').value.trim();
-    if (username.length > 0) {
-        currentUser = {
-            name: username,
-            avatar: selectedAvatar,
-            id: Date.now()
-        };
-        localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-        userVexBalance = 0;
-        await showMainPage();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    
+    if (!email || !password) {
+        showNotification('من فضلك املأ جميع الحقول', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentUser = {
+                id: result.user.id,
+                name: result.user.name,
+                email: result.user.email,
+                avatar: result.user.avatar
+            };
+            localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+            userVexBalance = 0;
+            await showMainPage();
+            showNotification('تم تسجيل الدخول بنجاح! 🎉');
+        } else {
+            showNotification(result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('خطأ في الاتصال بالخادم', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function handleSignup() {
+    const email = document.getElementById('signupEmail').value.trim();
+    const name = document.getElementById('signupName').value.trim();
+    const password = document.getElementById('signupPassword').value.trim();
+    const confirmPassword = document.getElementById('signupConfirmPassword').value.trim();
+    
+    // Validation
+    if (!email || !name || !password || !confirmPassword) {
+        showNotification('من فضلك املأ جميع الحقول', 'error');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showNotification('كلمتا المرور غير متطابقتين', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showNotification('يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل', 'error');
+        return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showNotification('من فضلك أدخل بريد إلكتروني صحيح', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, name, password })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentUser = {
+                id: result.user.id,
+                name: result.user.name,
+                email: result.user.email,
+                avatar: result.user.avatar
+            };
+            localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+            userVexBalance = 0;
+            await showMainPage();
+            showNotification('تم إنشاء الحساب بنجاح! 🎉');
+        } else {
+            showNotification(result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Signup error:', error);
+        showNotification('خطأ في الاتصال بالخادم', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function showSignupForm() {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('signupForm').classList.remove('hidden');
+}
+
+function showLoginForm() {
+    document.getElementById('signupForm').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+}
+
+function showLoading(show) {
+    const loading = document.getElementById('authLoading');
+    const forms = document.querySelectorAll('.auth-form');
+    
+    if (show) {
+        forms.forEach(form => form.classList.add('hidden'));
+        loading.classList.remove('hidden');
     } else {
-        alert('من فضلك ادخل اسمك');
+        loading.classList.add('hidden');
+        // Show appropriate form based on current state
+        const signupForm = document.getElementById('signupForm');
+        const loginForm = document.getElementById('loginForm');
+        
+        if (signupForm.classList.contains('hidden')) {
+            loginForm.classList.remove('hidden');
+        } else {
+            signupForm.classList.remove('hidden');
+        }
     }
 }
 
@@ -1027,19 +1157,21 @@ function closeBalanceModal() {
     }
 }
 
-function showNotification(message) {
+function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
+    const isError = type === 'error';
+    
     notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: linear-gradient(45deg, #00ff80, #00cc66);
+        background: linear-gradient(45deg, ${isError ? '#ff4757, #c44569' : '#00ff80, #00cc66'});
         color: white;
         padding: 1rem 2rem;
         border-radius: 10px;
         font-size: 1rem;
         font-weight: bold;
-        box-shadow: 0 5px 15px rgba(0, 255, 128, 0.3);
+        box-shadow: 0 5px 15px rgba(${isError ? '255, 71, 87' : '0, 255, 128'}, 0.3);
         z-index: 10000;
         animation: slideInRight 0.3s ease;
         backdrop-filter: blur(10px);
@@ -1048,7 +1180,7 @@ function showNotification(message) {
     
     notification.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-${isError ? 'exclamation-circle' : 'check-circle'}"></i>
             <span>${message}</span>
         </div>
     `;

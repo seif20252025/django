@@ -18,8 +18,32 @@
             <div class="login-box">
                 <h1>GAMES SHOP</h1>
                 <i class="fas fa-store store-icon"></i>
-                <input type="text" id="usernameInput" placeholder="اكتب اسمك" maxlength="20">
-                <button id="loginBtn" class="login-btn">دخول الي GAMES SHOP</button>
+                
+                <!-- Login Form -->
+                <div id="loginForm" class="auth-form">
+                    <h3>تسجيل الدخول</h3>
+                    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
+                    <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+                    <button id="loginSubmitBtn" class="auth-btn">تسجيل الدخول</button>
+                    <p class="auth-switch">ليس لديك حساب؟ <a href="#" id="showSignupBtn">إنشاء حساب جديد</a></p>
+                </div>
+                
+                <!-- Signup Form -->
+                <div id="signupForm" class="auth-form hidden">
+                    <h3>إنشاء حساب جديد</h3>
+                    <input type="email" id="signupEmail" placeholder="البريد الإلكتروني" required>
+                    <input type="text" id="signupName" placeholder="الاسم" maxlength="20" required>
+                    <input type="password" id="signupPassword" placeholder="كلمة المرور" minlength="6" required>
+                    <input type="password" id="signupConfirmPassword" placeholder="تأكيد كلمة المرور" minlength="6" required>
+                    <button id="signupSubmitBtn" class="auth-btn">إنشاء حساب</button>
+                    <p class="auth-switch">لديك حساب بالفعل؟ <a href="#" id="showLoginBtn">تسجيل الدخول</a></p>
+                </div>
+                
+                <!-- Loading indicator -->
+                <div id="authLoading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>جاري التحميل...</p>
+                </div>
             </div>
         </div>
     </div>

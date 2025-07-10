@@ -17,8 +17,66 @@ app.use((req, res, next) => {
     next();
 });
 
-// Global offers storage
+// Global offers storage with file persistence
+const fs = require('fs');
+const path = require('path');
+const OFFERS_FILE = path.join(__dirname, 'offers.json');
+const USERS_FILE = path.join(__dirname, 'users.json');
+
 let globalOffers = [];
+let registeredUsers = [];
+
+// Load offers from file on startup
+function loadOffersFromFile() {
+    try {
+        if (fs.existsSync(OFFERS_FILE)) {
+            const data = fs.readFileSync(OFFERS_FILE, 'utf8');
+            globalOffers = JSON.parse(data);
+            console.log(`📁 تم تحميل ${globalOffers.length} عرض من الملف`);
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل العروض:', error);
+        globalOffers = [];
+    }
+}
+
+// Save offers to file
+function saveOffersToFile() {
+    try {
+        fs.writeFileSync(OFFERS_FILE, JSON.stringify(globalOffers, null, 2));
+        console.log(`💾 تم حفظ ${globalOffers.length} عرض في الملف`);
+    } catch (error) {
+        console.error('خطأ في حفظ العروض:', error);
+    }
+}
+
+// Load users from file
+function loadUsersFromFile() {
+    try {
+        if (fs.existsSync(USERS_FILE)) {
+            const data = fs.readFileSync(USERS_FILE, 'utf8');
+            registeredUsers = JSON.parse(data);
+            console.log(`👥 تم تحميل ${registeredUsers.length} مستخدم من الملف`);
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل المستخدمين:', error);
+        registeredUsers = [];
+    }
+}
+
+// Save users to file
+function saveUsersToFile() {
+    try {
+        fs.writeFileSync(USERS_FILE, JSON.stringify(registeredUsers, null, 2));
+        console.log(`💾 تم حفظ ${registeredUsers.length} مستخدم في الملف`);
+    } catch (error) {
+        console.error('خطأ في حفظ المستخدمين:', error);
+    }
+}
+
+// Initialize data on startup
+loadOffersFromFile();
+loadUsersFromFile();
 
 // Payment endpoint
 app.post('/api/payment', async (req, res) => {
@@ -111,6 +169,7 @@ app.post('/api/offers', (req, res) => {
         offer.timestamp = new Date().toISOString();
         
         globalOffers.unshift(offer);
+        saveOffersToFile(); // حفظ في الملف
         console.log(`New offer added: ${offer.game} by ${offer.userName}. Total offers: ${globalOffers.length}`);
         res.json({ success: true, offers: globalOffers });
     } catch (error) {
@@ -126,6 +185,7 @@ app.delete('/api/offers/:offerId', (req, res) => {
         globalOffers = globalOffers.filter(offer => offer.id !== offerId);
         
         if (globalOffers.length < initialLength) {
+            saveOffersToFile(); // حفظ في الملف
             console.log(`Offer ${offerId} deleted. Total offers: ${globalOffers.length}`);
             res.json({ success: true, offers: globalOffers });
         } else {
@@ -159,6 +219,7 @@ app.post('/api/offers/:offerId/like', (req, res) => {
             }
             
             globalOffers[offerIndex] = offer;
+            saveOffersToFile(); // حفظ في الملف
             res.json({ success: true, offer: offer });
         } else {
             res.status(404).json({ success: false, error: 'Offer not found' });
@@ -177,6 +238,55 @@ app.get('/health', (req, res) => {
         totalOffers: globalOffers.length,
         offers: globalOffers.slice(0, 3) // Show first 3 offers for debugging
     });
+});
+
+// User registration endpoint
+app.post('/api/register', (req, res) => {
+    try {
+        const { email, name, password } = req.body;
+        
+        // Check if email already exists
+        const existingUser = registeredUsers.find(user => user.email === email);
+        if (existingUser) {
+            return res.status(400).json({ success: false, error: 'البريد الإلكتروني مسجل بالفعل' });
+        }
+        
+        // Create new user
+        const newUser = {
+            id: Date.now() + Math.random(),
+            email,
+            name,
+            password, // في التطبيق الحقيقي يجب تشفير كلمة المرور
+            avatar: Math.floor(Math.random() * 6) + 1,
+            joinDate: new Date().toISOString()
+        };
+        
+        registeredUsers.push(newUser);
+        saveUsersToFile();
+        
+        res.json({ success: true, user: { id: newUser.id, email: newUser.email, name: newUser.name, avatar: newUser.avatar } });
+    } catch (error) {
+        console.error('Error registering user:', error);
+        res.status(500).json({ success: false, error: 'خطأ في التسجيل' });
+    }
+});
+
+// User login endpoint
+app.post('/api/login', (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        // Find user
+        const user = registeredUsers.find(u => u.email === email && u.password === password);
+        if (!user) {
+            return res.status(401).json({ success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+        }
+        
+        res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar } });
+    } catch (error) {
+        console.error('Error logging in user:', error);
+        res.status(500).json({ success: false, error: 'خطأ في تسجيل الدخول' });
+    }
 });
 
 // Debug endpoint to view all offers
