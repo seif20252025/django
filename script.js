@@ -503,8 +503,15 @@ async function showMainPage() {
     loadUserSettingsFromStorage();
     loadMembersFromStorage();
 
-    // Check for new messages
+    // Check for new messages immediately and periodically
     checkForNewMessages();
+    setInterval(() => {
+        if (currentUser) {
+            checkForNewMessages();
+        }
+    }, 5000); // فحص كل 5 ثوانٍ
+    
+    console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
 }
 
 // Side menu functionality
@@ -822,10 +829,17 @@ function startChat(partnerName, partnerId) {
         return;
     }
 
+    // التحقق من إعدادات السماح بالمراسلات
+    if (!userSettings.allowMessages) {
+        showNotification('المراسلات معطلة في الإعدادات 🚫');
+        return;
+    }
+
     currentChatPartner = { name: partnerName, id: partnerId };
     document.getElementById('chatTitle').textContent = `مراسلة ${partnerName}`;
     document.getElementById('chatModal').classList.add('active');
     loadChatMessages();
+    console.log(`💬 بدء محادثة مع ${partnerName} (ID: ${partnerId})`);
 }
 
 function loadChatMessages() {
@@ -876,7 +890,10 @@ async function sendMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
 
-    if (!text || !currentChatPartner) return;
+    if (!text || !currentChatPartner) {
+        console.log('⚠️ لا يوجد نص أو مستخدم للمراسلة');
+        return;
+    }
 
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
 
@@ -900,12 +917,19 @@ async function sendMessage() {
     
     // Notify other users about new message
     notifyNewMessage(currentChatPartner.id);
+    
+    // Show success notification
+    showNotification(`تم إرسال الرسالة إلى ${currentChatPartner.name} 📩`);
+    console.log(`📩 تم إرسال رسالة إلى ${currentChatPartner.name}: ${text}`);
 }
 
 async function sendImageMessage() {
     const imageFile = document.getElementById('chatImage').files[0];
     
-    if (!imageFile || !currentChatPartner) return;
+    if (!imageFile || !currentChatPartner) {
+        console.log('⚠️ لا يوجد صورة أو مستخدم للمراسلة');
+        return;
+    }
 
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -916,6 +940,7 @@ async function sendImageMessage() {
             senderName: currentUser.name,
             senderAvatar: currentUser.avatar,
             image: e.target.result,
+            text: '📸 صورة',
             timestamp: new Date().toISOString(),
             type: 'image'
         };
@@ -933,6 +958,10 @@ async function sendImageMessage() {
         
         // Notify other users about new message
         notifyNewMessage(currentChatPartner.id);
+        
+        // Show success notification
+        showNotification(`تم إرسال صورة إلى ${currentChatPartner.name} 📸`);
+        console.log(`📸 تم إرسال صورة إلى ${currentChatPartner.name}`);
     };
     reader.readAsDataURL(imageFile);
 }
@@ -971,12 +1000,15 @@ function notifyNewMessage(recipientId) {
         const existingNotifications = JSON.parse(localStorage.getItem('messageNotifications') || '[]');
         existingNotifications.push(notification);
         
-        // الاحتفاظ بآخر 50 إشعار فقط
-        if (existingNotifications.length > 50) {
-            existingNotifications.splice(0, existingNotifications.length - 50);
+        // الاحتفاظ بآخر 100 إشعار فقط
+        if (existingNotifications.length > 100) {
+            existingNotifications.splice(0, existingNotifications.length - 100);
         }
         
         localStorage.setItem('messageNotifications', JSON.stringify(existingNotifications));
+        
+        // تحديث إشعار المراسلات فوراً للمرسل
+        updateMessageBadge();
         
         // إزالة الإشعار الفوري بعد ثانية واحدة
         setTimeout(() => {
@@ -1017,6 +1049,15 @@ function loadMessagesList() {
         return;
     }
 
+    // ترتيب المحادثات حسب آخر رسالة
+    activeChats.sort((a, b) => {
+        const messagesA = conversations[a];
+        const messagesB = conversations[b];
+        const lastMessageA = messagesA[messagesA.length - 1];
+        const lastMessageB = messagesB[messagesB.length - 1];
+        return new Date(lastMessageB.timestamp) - new Date(lastMessageA.timestamp);
+    });
+
     activeChats.forEach(chatId => {
         const messages = conversations[chatId];
         const lastMessage = messages[messages.length - 1];
@@ -1037,14 +1078,18 @@ function loadMessagesList() {
             }
         }
 
+        // تحديد ما إذا كانت الرسالة جديدة
+        const isNewMessage = lastMessage.senderId !== currentUser.id;
+        const messageText = lastMessage.text || '📸 صورة';
+
         const messageItem = document.createElement('div');
-        messageItem.className = 'conversation-item';
+        messageItem.className = `conversation-item ${isNewMessage ? 'new-message' : ''}`;
         messageItem.innerHTML = `
             <div class="conversation-header">
                 <img src="https://i.pravatar.cc/150?img=${otherUserAvatar}" alt="${otherUserName}" class="conversation-avatar">
                 <div class="conversation-info">
                     <div class="conversation-name">${otherUserName}</div>
-                    <div class="conversation-last-message">${lastMessage.text.length > 50 ? lastMessage.text.substring(0, 50) + '...' : lastMessage.text}</div>
+                    <div class="conversation-last-message">${messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText}</div>
                     <small class="conversation-time">${new Date(lastMessage.timestamp).toLocaleString('ar-EG', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -1053,6 +1098,7 @@ function loadMessagesList() {
                     })}</small>
                 </div>
                 <div class="conversation-indicator">
+                    ${isNewMessage ? '<span class="new-message-dot">●</span>' : ''}
                     <i class="fas fa-chevron-left"></i>
                 </div>
             </div>
@@ -1440,6 +1486,8 @@ function checkForNewMessages() {
     );
 
     let hasNew = false;
+    let unreadCount = 0;
+    
     userChats.forEach(chatId => {
         const messages = conversations[chatId];
         if (messages && messages.length > 0) {
@@ -1447,8 +1495,9 @@ function checkForNewMessages() {
             if (lastMessage.senderId !== currentUser.id) {
                 const messageTime = new Date(lastMessage.timestamp);
                 const now = new Date();
-                if (now - messageTime < 600000) { // رسالة جديدة خلال آخر 10 دقائق
+                if (now - messageTime < 1800000) { // رسالة جديدة خلال آخر 30 دقيقة
                     hasNew = true;
+                    unreadCount++;
                 }
             }
         }
@@ -1459,20 +1508,23 @@ function checkForNewMessages() {
     const recentNotifications = notifications.filter(notif => {
         const notifTime = new Date(notif.timestamp);
         const now = new Date();
-        return notif.recipientId === currentUser.id && (now - notifTime < 600000);
+        return notif.recipientId === currentUser.id && (now - notifTime < 1800000);
     });
 
-    if ((hasNew || recentNotifications.length > 0) && !hasNewMessages) {
-        showMessageNotification();
+    if (hasNew || recentNotifications.length > 0) {
+        showMessageNotification(Math.max(unreadCount, recentNotifications.length));
         hasNewMessages = true;
-        console.log('🔔 تم اكتشاف رسائل جديدة');
+        console.log('🔔 تم اكتشاف رسائل جديدة:', Math.max(unreadCount, recentNotifications.length));
     }
 }
 
-function showMessageNotification() {
+function showMessageNotification(count = 1) {
     const badge = document.getElementById('messageNotification');
     if (badge) {
         badge.classList.remove('hidden');
+        badge.textContent = count > 9 ? '9+' : count.toString();
+        badge.style.background = '#ff4757';
+        badge.style.animation = 'pulse 1s infinite';
     }
 }
 
@@ -1480,8 +1532,13 @@ function clearMessageNotification() {
     const badge = document.getElementById('messageNotification');
     if (badge) {
         badge.classList.add('hidden');
+        badge.style.animation = 'none';
     }
     hasNewMessages = false;
+}
+
+function updateMessageBadge() {
+    checkForNewMessages();
 }
 
 // AdSense initialization
