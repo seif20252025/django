@@ -251,6 +251,10 @@ function setupEventListeners() {
         closeSideMenu();
         joinDiscordServer();
     });
+    document.getElementById('updatesBtn').addEventListener('click', () => {
+        closeSideMenu();
+        showUpdatesModal();
+    });
     document.getElementById('marketBtn').addEventListener('click', () => {
         closeSideMenu();
         showMarketModal();
@@ -940,10 +944,20 @@ function showImageModal(imageSrc) {
 function notifyNewMessage(recipientId) {
     // This would typically send a notification to the recipient
     // For now, we'll just trigger a storage event to update other tabs
-    localStorage.setItem('newMessageNotification', JSON.stringify({
+    const notification = {
         recipientId: recipientId,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
         timestamp: new Date().toISOString()
-    }));
+    };
+    localStorage.setItem('newMessageNotification', JSON.stringify(notification));
+    
+    // Also store in a more persistent way for message notifications
+    const existingNotifications = JSON.parse(localStorage.getItem('messageNotifications') || '[]');
+    existingNotifications.push(notification);
+    localStorage.setItem('messageNotifications', JSON.stringify(existingNotifications));
+    
+    console.log(`📩 تم إرسال إشعار رسالة جديدة إلى المستخدم ${recipientId}`);
 }
 
 function getChatId(userId1, userId2) {
@@ -1208,6 +1222,11 @@ function showSupportModal() {
     document.getElementById('supportModal').classList.add('active');
 }
 
+// Updates modal
+function showUpdatesModal() {
+    document.getElementById('updatesModal').classList.add('active');
+}
+
 // Market modal
 function showMarketModal() {
     document.getElementById('marketModal').classList.add('active');
@@ -1397,16 +1416,25 @@ function checkForNewMessages() {
             if (lastMessage.senderId !== currentUser.id) {
                 const messageTime = new Date(lastMessage.timestamp);
                 const now = new Date();
-                if (now - messageTime < 60000) { // رسالة جديدة خلال آخر دقيقة
+                if (now - messageTime < 300000) { // رسالة جديدة خلال آخر 5 دقائق
                     hasNew = true;
                 }
             }
         }
     });
 
-    if (hasNew && !hasNewMessages) {
+    // Also check for stored notifications
+    const notifications = JSON.parse(localStorage.getItem('messageNotifications') || '[]');
+    const recentNotifications = notifications.filter(notif => {
+        const notifTime = new Date(notif.timestamp);
+        const now = new Date();
+        return notif.recipientId === currentUser.id && (now - notifTime < 300000);
+    });
+
+    if ((hasNew || recentNotifications.length > 0) && !hasNewMessages) {
         showMessageNotification();
         hasNewMessages = true;
+        console.log('🔔 تم اكتشاف رسائل جديدة');
     }
 }
 
