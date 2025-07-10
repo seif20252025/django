@@ -47,6 +47,46 @@ body {
 }
 
 .login-box h1 {
+
+
+/* Enhanced AdSense Styles */
+.adsense-main-container {
+    background: rgba(0, 191, 255, 0.1);
+    padding: 1.5rem;
+    margin: 2rem auto;
+    max-width: 1200px;
+    border-radius: 15px;
+    border: 2px solid #00bfff;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 191, 255, 0.2);
+}
+
+.adsense-main-container .adsbygoogle {
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 280px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ad-modal .ad-container {
+    min-height: 280px;
+    max-height: 400px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #00bfff;
+}
+
+.ad-modal .adsbygoogle {
+    width: 100% !important;
+    max-width: 500px;
+    border-radius: 8px;
+}
+
     font-size: 3rem;
     margin-bottom: 1rem;
     background: linear-gradient(45deg, #00bfff, #ffffff);

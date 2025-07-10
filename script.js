@@ -1,4 +1,3 @@
-
 // Global variables
 let currentUser = null;
 let offers = [];
@@ -31,13 +30,13 @@ function initializeApp() {
     } else {
         showLoginPage();
     }
-    
+
     // Load data from server
     loadOffersFromServer();
     loadConversationsFromServer();
     loadUserSettingsFromServer();
     loadMembersFromServer();
-    
+
     // Event listeners
     setupEventListeners();
 }
@@ -64,7 +63,7 @@ async function saveOfferToServer(offer) {
             },
             body: JSON.stringify(offer)
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             return result.offer;
@@ -96,7 +95,7 @@ async function likeOfferOnServer(offerId) {
             },
             body: JSON.stringify({ userId: currentUser.id })
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             return result.offer;
@@ -109,7 +108,7 @@ async function likeOfferOnServer(offerId) {
 
 async function loadConversationsFromServer() {
     if (!currentUser) return;
-    
+
     try {
         const response = await fetch(`${API_BASE}/api/conversations/${currentUser.id}`);
         if (response.ok) {
@@ -129,7 +128,7 @@ async function saveMessageToServer(chatId, message) {
             },
             body: JSON.stringify({ chatId, message })
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             return result.message;
@@ -160,7 +159,7 @@ async function saveMemberToServer(member) {
             },
             body: JSON.stringify(member)
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             registeredMembers = result.members;
@@ -174,7 +173,7 @@ async function saveMemberToServer(member) {
 
 async function loadUserSettingsFromServer() {
     if (!currentUser) return;
-    
+
     try {
         const response = await fetch(`${API_BASE}/api/settings/${currentUser.id}`);
         if (response.ok) {
@@ -187,7 +186,7 @@ async function loadUserSettingsFromServer() {
 
 async function saveUserSettingsToServer() {
     if (!currentUser) return;
-    
+
     try {
         const response = await fetch(`${API_BASE}/api/settings/${currentUser.id}`, {
             method: 'POST',
@@ -205,7 +204,7 @@ async function saveUserSettingsToServer() {
 
 async function checkVIPStatus() {
     if (!currentUser) return false;
-    
+
     try {
         const response = await fetch(`${API_BASE}/api/vip/${currentUser.id}`);
         if (response.ok) {
@@ -220,7 +219,7 @@ async function checkVIPStatus() {
 
 async function activateVIPOnServer() {
     if (!currentUser) return false;
-    
+
     try {
         const response = await fetch(`${API_BASE}/api/vip`, {
             method: 'POST',
@@ -242,11 +241,11 @@ function setupEventListeners() {
     document.getElementById('usernameInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') handleLogin();
     });
-    
+
     // Menu
     document.getElementById('menuBtn').addEventListener('click', toggleSideMenu);
     document.getElementById('closeMenu').addEventListener('click', closeSideMenu);
-    
+
     // Menu items
     document.getElementById('homeBtn').addEventListener('click', () => {
         closeSideMenu();
@@ -285,33 +284,33 @@ function setupEventListeners() {
         closeSideMenu();
         showMarketModal();
     });
-    
+
     // Members button
     document.getElementById('membersBtn').addEventListener('click', () => {
         showMembersModal();
     });
-    
+
     // Add offer
     document.getElementById('addOfferBtn').addEventListener('click', showAddOfferModal);
     document.getElementById('closeAddOffer').addEventListener('click', closeAddOfferModal);
-    
+
     // Payment options
     document.getElementById('currencyBtn').addEventListener('click', showCurrencyOptions);
     document.getElementById('otherBtn').addEventListener('click', showAccountInput);
-    
+
     // Currency selection
     document.querySelectorAll('.currency-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             selectCurrency(this.dataset.currency);
         });
     });
-    
+
     // Submit offer
     document.getElementById('submitOffer').addEventListener('click', submitOffer);
-    
+
     // Game search
     document.getElementById('gameSearchInput').addEventListener('input', filterOffersByGame);
-    
+
     // Profile editing
     document.getElementById('saveProfile').addEventListener('click', saveProfile);
     document.querySelectorAll('.avatar-option').forEach(avatar => {
@@ -319,13 +318,13 @@ function setupEventListeners() {
             selectAvatar(this.dataset.avatar);
         });
     });
-    
+
     // Chat
     document.getElementById('sendMessage').addEventListener('click', sendMessage);
     document.getElementById('chatInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') sendMessage();
     });
-    
+
     // Close modals when clicking outside
     window.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal')) {
@@ -359,24 +358,24 @@ function showLoginPage() {
 async function showMainPage() {
     document.getElementById('loginPage').classList.remove('active');
     document.getElementById('mainPage').classList.add('active');
-    
+
     // Update user info
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
     updateVexDisplay();
-    
+
     // Register member on server
     await registerMember();
-    
+
     // Load all data from server
     await loadOffersFromServer();
     await loadConversationsFromServer();
     await loadUserSettingsFromServer();
     await loadMembersFromServer();
-    
+
     // Display offers
     displayOffers();
-    
+
     // Check for new messages
     checkForNewMessages();
 }
@@ -441,12 +440,12 @@ async function submitOffer() {
     const priceAmount = document.getElementById('priceAmount').value;
     const selectedCurrency = document.getElementById('selectedCurrency').textContent;
     const accountDetails = document.getElementById('accountDetails').value.trim();
-    
+
     if (!game || !offerText) {
         alert('من فضلك املأ جميع الحقول المطلوبة');
         return;
     }
-    
+
     let requirement = '';
     if (selectedCurrency && priceAmount) {
         requirement = `${priceAmount} ${selectedCurrency}`;
@@ -456,11 +455,11 @@ async function submitOffer() {
         alert('من فضلك حدد المطلوب مقابل العرض');
         return;
     }
-    
+
     // Show security warning before submitting
     showSecurityWarning(async () => {
         const isVIP = await checkVIPStatus();
-        
+
         const newOffer = {
             userId: currentUser.id,
             userName: currentUser.name,
@@ -470,7 +469,7 @@ async function submitOffer() {
             requirement: requirement,
             isVIP: isVIP
         };
-        
+
         const savedOffer = await saveOfferToServer(newOffer);
         if (savedOffer) {
             await loadOffersFromServer(); // Reload all offers
@@ -486,17 +485,17 @@ async function submitOffer() {
 function displayOffers(filteredOffers = null) {
     const container = document.getElementById('offersContainer');
     const offersToShow = filteredOffers || offers;
-    
+
     // Sort offers by likes (highest first)
     const sortedOffers = [...offersToShow].sort((a, b) => b.likes - a.likes);
-    
+
     container.innerHTML = '';
-    
+
     if (sortedOffers.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff; font-size: 1.5rem; grid-column: 1/-1;">لا توجد عروض حالياً 😔</div>';
         return;
     }
-    
+
     sortedOffers.forEach(offer => {
         const offerCard = createOfferCard(offer);
         container.appendChild(offerCard);
@@ -506,10 +505,10 @@ function displayOffers(filteredOffers = null) {
 function createOfferCard(offer) {
     const card = document.createElement('div');
     card.className = `offer-card ${offer.isVIP ? 'vip-offer' : ''}`;
-    
+
     const isOwner = offer.userId === currentUser.id;
     const hasLiked = offer.likedBy && offer.likedBy.includes(currentUser.id);
-    
+
     card.innerHTML = `
         <div class="offer-header">
             <img src="https://i.pravatar.cc/150?img=${offer.userAvatar}" alt="${offer.userName}" class="offer-avatar">
@@ -541,7 +540,7 @@ function createOfferCard(offer) {
             </div>
         </div>
     `;
-    
+
     return card;
 }
 
@@ -580,7 +579,7 @@ function startChat(partnerName, partnerId) {
         showNotification('لا يمكنك مراسلة هذا المستخدم - محظور 🚫');
         return;
     }
-    
+
     currentChatPartner = { name: partnerName, id: partnerId };
     document.getElementById('chatTitle').textContent = `مراسلة ${partnerName}`;
     document.getElementById('chatModal').classList.add('active');
@@ -589,56 +588,56 @@ function startChat(partnerName, partnerId) {
 
 function loadChatMessages() {
     if (!currentChatPartner) return;
-    
+
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
     const messages = conversations[chatId] || [];
     const container = document.getElementById('chatMessages');
-    
+
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     if (messages.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">ابدأ المحادثة! 💬</div>';
         return;
     }
-    
+
     messages.forEach(message => {
         if (!message.text) return;
-        
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
-        
+
         const messageTime = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('ar-EG', {
             hour: '2-digit',
             minute: '2-digit'
         }) : '';
-        
+
         messageDiv.innerHTML = `
             <div class="message-text">${message.text}</div>
             ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
         container.appendChild(messageDiv);
     });
-    
+
     container.scrollTop = container.scrollHeight;
 }
 
 async function sendMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
-    
+
     if (!text || !currentChatPartner) return;
-    
+
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
-    
+
     const message = {
         senderId: currentUser.id,
         senderName: currentUser.name,
         senderAvatar: currentUser.avatar,
         text: text
     };
-    
+
     const savedMessage = await saveMessageToServer(chatId, message);
     if (savedMessage) {
         await loadConversationsFromServer();
@@ -662,27 +661,27 @@ function loadMessagesList() {
     const userChats = Object.keys(conversations).filter(chatId => 
         chatId.includes(currentUser.id.toString())
     );
-    
+
     container.innerHTML = '';
-    
+
     const activeChats = userChats.filter(chatId => {
         const messages = conversations[chatId];
         return messages && messages.length > 0;
     });
-    
+
     if (activeChats.length === 0) {
         container.innerHTML = '<div class="no-conversations"><i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>لا توجد محادثات حالياً</p><p style="opacity: 0.7; font-size: 0.9rem;">ابدأ محادثة من خلال الضغط على "مراسلة الشخص" في أي عرض</p></div>';
         return;
     }
-    
+
     activeChats.forEach(chatId => {
         const messages = conversations[chatId];
         const lastMessage = messages[messages.length - 1];
         const otherUserId = chatId.split('-').find(id => id !== currentUser.id.toString());
-        
+
         let otherUserName = 'مستخدم غير معروف';
         let otherUserAvatar = 1;
-        
+
         const offer = offers.find(o => o.userId == otherUserId);
         if (offer) {
             otherUserName = offer.userName;
@@ -694,7 +693,7 @@ function loadMessagesList() {
                 otherUserAvatar = userMessage.senderAvatar || 1;
             }
         }
-        
+
         const messageItem = document.createElement('div');
         messageItem.className = 'conversation-item';
         messageItem.innerHTML = `
@@ -719,7 +718,7 @@ function loadMessagesList() {
             closeModal('messagesModal');
             startChat(otherUserName, parseInt(otherUserId));
         });
-        
+
         container.appendChild(messageItem);
     });
 }
@@ -738,23 +737,23 @@ function showGameSearchModal() {
 function filterOffersByGame() {
     const searchTerm = document.getElementById('gameSearchInput').value.toLowerCase();
     const container = document.getElementById('filteredOffers');
-    
+
     if (!searchTerm) {
         container.innerHTML = '';
         return;
     }
-    
+
     const filteredOffers = offers.filter(offer => 
         offer.game.toLowerCase().includes(searchTerm)
     );
-    
+
     container.innerHTML = '';
-    
+
     if (filteredOffers.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff;">لا توجد عروض لهذه اللعبة</div>';
         return;
     }
-    
+
     filteredOffers.forEach(offer => {
         const offerCard = createOfferCard(offer);
         container.appendChild(offerCard);
@@ -764,7 +763,7 @@ function filterOffersByGame() {
 function showEditProfileModal() {
     document.getElementById('editProfileModal').classList.add('active');
     document.getElementById('editNameInput').value = currentUser.name;
-    
+
     document.querySelectorAll('.avatar-option').forEach(avatar => {
         avatar.classList.remove('selected');
         if (avatar.dataset.avatar == currentUser.avatar) {
@@ -787,20 +786,20 @@ async function saveProfile() {
         alert('من فضلك ادخل اسم صحيح');
         return;
     }
-    
+
     currentUser.name = newName;
     currentUser.avatar = selectedAvatar;
-    
+
     localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-    
+
     // Update on server
     await saveMemberToServer(currentUser);
-    
+
     // Update display
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
     updateVexDisplay();
-    
+
     closeModal('editProfileModal');
     showNotification('تم حفظ الاعدادات بنجاح! ✅');
 }
@@ -839,26 +838,26 @@ function loadBlockList() {
     const userChats = Object.keys(conversations).filter(chatId => 
         chatId.includes(currentUser.id.toString())
     );
-    
+
     container.innerHTML = '';
-    
+
     const activeChats = userChats.filter(chatId => {
         const messages = conversations[chatId];
         return messages && messages.length > 0;
     });
-    
+
     if (activeChats.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا يوجد أشخاص للحظر</div>';
         return;
     }
-    
+
     activeChats.forEach(chatId => {
         const messages = conversations[chatId];
         const otherUserId = parseInt(chatId.split('-').find(id => id !== currentUser.id.toString()));
-        
+
         let otherUserName = 'مستخدم غير معروف';
         let otherUserAvatar = 1;
-        
+
         const offer = offers.find(o => o.userId == otherUserId);
         if (offer) {
             otherUserName = offer.userName;
@@ -870,9 +869,9 @@ function loadBlockList() {
                 otherUserAvatar = userMessage.senderAvatar || 1;
             }
         }
-        
+
         const isBlocked = userSettings.blockedUsers.includes(otherUserId);
-        
+
         const userItem = document.createElement('div');
         userItem.className = 'block-user-item';
         userItem.innerHTML = `
@@ -884,7 +883,7 @@ function loadBlockList() {
                 ${isBlocked ? 'إلغاء الحظر' : 'حظر🚫'}
             </button>
         `;
-        
+
         container.appendChild(userItem);
     });
 }
@@ -894,14 +893,14 @@ async function blockUser(userId, userName) {
         userSettings.blockedUsers.push(userId);
         await saveUserSettingsToServer();
         loadBlockList();
-        
+
         const chatId = getChatId(currentUser.id, userId);
         const blockMessage = {
             senderId: currentUser.id,
             text: `تم حظرك من قبل ${currentUser.name} 🚫`,
             isSystemMessage: true
         };
-        
+
         await saveMessageToServer(chatId, blockMessage);
         showNotification(`تم حظر ${userName} بنجاح 🚫`);
     }
@@ -929,16 +928,16 @@ function showMarketModal() {
 // VIP purchase
 async function buyVIP() {
     const vipPrice = 10000;
-    
+
     if (userVexBalance < vipPrice) {
         showInsufficientVexModal();
         return;
     }
-    
+
     if (confirm(`هل تريد شراء VIP مقابل ${vipPrice} Vex؟`)) {
         userVexBalance -= vipPrice;
         updateVexDisplay();
-        
+
         const success = await activateVIPOnServer();
         if (success) {
             showNotification('تم شراء VIP بنجاح! 👑');
@@ -955,7 +954,7 @@ function showInsufficientVexModal() {
     const balanceModal = document.createElement('div');
     balanceModal.className = 'modal active';
     balanceModal.id = 'balanceModal';
-    
+
     balanceModal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -973,7 +972,7 @@ function showInsufficientVexModal() {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(balanceModal);
 }
 
@@ -1011,7 +1010,7 @@ function showNotification(message) {
         font-weight: bold;
         animation: slideInRight 0.3s ease;
     `;
-    
+
     if (!document.getElementById('notificationStyles')) {
         const style = document.createElement('style');
         style.id = 'notificationStyles';
@@ -1027,10 +1026,10 @@ function showNotification(message) {
         `;
         document.head.appendChild(style);
     }
-    
+
     notification.textContent = message;
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => {
@@ -1041,13 +1040,116 @@ function showNotification(message) {
     }, 3000);
 }
 
-// AdSense Functions (simplified to avoid errors)
+// AdSense Functions
+let adInitialized = false;
+let periodicAdInterval = null;
+
 function initializeAds() {
-    console.log('AdSense disabled to avoid errors');
+    // Initialize AdSense on page load only once
+    if (!adInitialized) {
+        setTimeout(() => {
+            try {
+                const existingAds = document.querySelectorAll('.adsbygoogle');
+                existingAds.forEach(ad => {
+                    if (!ad.dataset.adsbygoogleStatus) {
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                    }
+                });
+                adInitialized = true;
+                console.log('AdSense initialized successfully');
+            } catch (error) {
+                console.error('AdSense initialization error:', error);
+            }
+        }, 3000);
+    }
+
+    // Show periodic ads every 5 minutes - only start once
+    if (!periodicAdInterval) {
+        periodicAdInterval = setInterval(showPeriodicAd, 5 * 60 * 1000); // 5 minutes in milliseconds
+    }
 }
 
 function showPeriodicAd() {
-    console.log('Periodic ads disabled');
+    // Check if there's already an ad modal open
+    if (document.getElementById('periodicAdModal')) {
+        return;
+    }
+
+    const adModal = document.createElement('div');
+    adModal.className = 'modal active';
+    adModal.id = 'periodicAdModal';
+
+    // Create unique ad slot ID
+    const uniqueAdId = 'periodic-ad-' + Date.now();
+
+    adModal.innerHTML = `
+        <div class="modal-content ad-modal">
+            <div class="modal-header">
+                <h3>إعلان 📢</h3>
+                <button class="close-modal" onclick="closePeriodicAd()" id="closeAdBtn" disabled>×</button>
+                <span class="ad-timer" id="adTimer">5</span>
+            </div>
+            <div class="modal-body">
+                <div class="ad-container">
+                    <ins class="adsbygoogle ${uniqueAdId}"
+                         style="display:block; min-width: 300px; min-height: 250px;"
+                         data-ad-client="ca-pub-1404937854433871"
+                         data-ad-slot="3016283172"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                </div>
+                <p class="ad-message">يمكنك إغلاق الإعلان بعد <span id="countdown">5</span> ثوانٍ</p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(adModal);
+
+    // Wait for modal to be rendered before pushing ad
+    setTimeout(() => {
+        try {
+            const newAd = document.querySelector(`.${uniqueAdId}`);
+            if (newAd && !newAd.dataset.adsbygoogleStatus) {
+                (adsbygoogle = window.adsbygoogle || []).push({});
+                console.log('Periodic ad loaded successfully');
+            }
+        } catch (error) {
+            console.error('AdSense periodic ad error:', error);
+            // Show fallback content if ad fails
+            const adContainer = document.querySelector('.ad-container');
+            if (adContainer) {
+                adContainer.innerHTML = `
+                    <div style="background: linear-gradient(45deg, #00bfff, #004e92); padding: 2rem; border-radius: 10px; text-align: center; color: white;">
+                        <h3>🎮 GAMES SHOP 🎮</h3>
+                        <p>أفضل موقع لبيع وشراء عروض الألعاب</p>
+                        <p>انضم إلى مجتمعنا الآن!</p>
+                    </div>
+                `;
+            }
+        }
+    }, 500);
+
+    // Countdown timer for ad
+    let countdown = 5;
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        const countdownElement = document.getElementById('countdown');
+        const timerElement = document.getElementById('adTimer');
+
+        if (countdownElement) countdownElement.textContent = countdown;
+        if (timerElement) timerElement.textContent = countdown;
+
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            const closeBtn = document.getElementById('closeAdBtn');
+            if (closeBtn) {
+                closeBtn.disabled = false;
+                closeBtn.style.color = '#00bfff';
+                closeBtn.style.cursor = 'pointer';
+            }
+            if (timerElement) timerElement.style.display = 'none';
+        }
+    }, 1000);
 }
 
 function closePeriodicAd() {
@@ -1061,7 +1163,7 @@ function closePeriodicAd() {
 function showSecurityWarning(callback) {
     const modal = document.getElementById('securityWarningModal');
     modal.classList.add('active');
-    
+
     const agreeBtn = document.getElementById('agreeWarning');
     agreeBtn.onclick = () => {
         modal.classList.remove('active');
@@ -1078,44 +1180,44 @@ async function showMembersModal() {
 
 async function registerMember() {
     if (!currentUser) return;
-    
+
     const member = {
         id: currentUser.id,
         name: currentUser.name,
         avatar: currentUser.avatar
     };
-    
+
     await saveMemberToServer(member);
 }
 
 function loadMembersList() {
     const container = document.getElementById('membersList');
     container.innerHTML = '';
-    
+
     if (registeredMembers.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا يوجد أعضاء حالياً</div>';
         return;
     }
-    
+
     const sortedMembers = [...registeredMembers].sort((a, b) => {
         if (a.isVIP && !b.isVIP) return -1;
         if (!a.isVIP && b.isVIP) return 1;
         return new Date(b.joinTime || 0) - new Date(a.joinTime || 0);
     });
-    
+
     sortedMembers.forEach(member => {
         const memberCard = document.createElement('div');
         memberCard.className = `member-card ${member.isVIP ? 'vip-member' : ''}`;
-        
+
         const joinDate = member.joinTime ? new Date(member.joinTime).toLocaleDateString('ar-EG') : 'غير محدد';
-        
+
         memberCard.innerHTML = `
             <img src="https://i.pravatar.cc/150?img=${member.avatar}" alt="${member.name}" class="member-avatar">
             <div class="member-name">${member.name}${member.isVIP ? '<span class="vip-crown">👑</span>' : ''}</div>
             <div class="member-greeting">منور يا ${member.name}</div>
             <div class="member-join-time">انضم في ${joinDate}</div>
         `;
-        
+
         container.appendChild(memberCard);
     });
 }
@@ -1147,7 +1249,7 @@ function checkForNewMessages() {
     const userChats = Object.keys(conversations).filter(chatId => 
         chatId.includes(currentUser.id.toString())
     );
-    
+
     let hasUnreadMessages = false;
     userChats.forEach(chatId => {
         const messages = conversations[chatId];
@@ -1158,7 +1260,7 @@ function checkForNewMessages() {
             }
         }
     });
-    
+
     if (hasUnreadMessages) {
         showMessageNotification();
     }
