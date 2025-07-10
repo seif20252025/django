@@ -59,6 +59,8 @@
                 <button id="gameOffersBtn" class="menu-item">عروض لالعاب معينه🕹️</button>
                 <button id="editProfileBtn" class="menu-item">تعديل الحساب🧢</button>
                 <button id="settingsBtn" class="menu-item">الاعدادات⚙️</button>
+                <button id="supportBtn" class="menu-item">الدعم الفني🔨</button>
+                <button id="marketBtn" class="menu-item">ماركت🛒</button>
             </div>
         </div>
 
@@ -252,6 +254,66 @@
                 <div class="modal-body">
                     <div id="blockList" class="block-list">
                         <!-- Block list will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Modal -->
+        <div id="supportModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>الدعم الفني🔨</h3>
+                    <button class="close-modal" onclick="closeModal('supportModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <h4>للتواصل مع الدعم الفني راسل الحسابات الآتية في ديسكورد🔨:</h4>
+                    <div class="support-contacts">
+                        <div class="support-contact">• seif_demon.</div>
+                        <div class="support-contact">• eyesnneverlies</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Modal -->
+        <div id="marketModal" class="modal">
+            <div class="modal-content market-modal">
+                <div class="modal-header">
+                    <h3>ماركت🛒</h3>
+                    <button class="close-modal" onclick="closeModal('marketModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="market-items">
+                        <!-- VIP Package -->
+                        <div class="market-item vip-item">
+                            <div class="market-item-header">
+                                <div class="vip-badge">VIP👑</div>
+                            </div>
+                            <div class="market-item-content">
+                                <h4>مميزات VIP:</h4>
+                                <ul class="vip-features">
+                                    <li>• يجعل العرض ذهبي🪙</li>
+                                    <li>• خصم 50% من ماركت</li>
+                                </ul>
+                                <button class="buy-btn vip-buy" onclick="buyVIP()">شراء - 30 LE</button>
+                            </div>
+                        </div>
+
+                        <!-- Development Service -->
+                        <div class="market-item dev-item">
+                            <div class="market-item-header">
+                                <div class="dev-badge">تصنيع🤖</div>
+                            </div>
+                            <div class="market-item-content">
+                                <h4>الخدمات المتاحة:</h4>
+                                <ul class="dev-services">
+                                    <li>• صنع بوتات ديسكورد</li>
+                                    <li>• صنع مواقع ويب</li>
+                                </ul>
+                                <p class="dev-contact">تواصل مع الدعم الفني من القائمة الجانبية</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -70,6 +70,14 @@ function setupEventListeners() {
         closeSideMenu();
         showSettingsModal();
     });
+    document.getElementById('supportBtn').addEventListener('click', () => {
+        closeSideMenu();
+        showSupportModal();
+    });
+    document.getElementById('marketBtn').addEventListener('click', () => {
+        closeSideMenu();
+        showMarketModal();
+    });
     
     // Add offer
     document.getElementById('addOfferBtn').addEventListener('click', showAddOfferModal);
@@ -691,6 +699,24 @@ function loadUserSettings() {
     }
 }
 
+// Support modal
+function showSupportModal() {
+    document.getElementById('supportModal').classList.add('active');
+}
+
+// Market modal
+function showMarketModal() {
+    document.getElementById('marketModal').classList.add('active');
+}
+
+// VIP purchase
+function buyVIP() {
+    if (confirm('سيتم إضافة 30 LE إلى رقم 01099916832. هل تريد المتابعة؟')) {
+        showNotification('شكراً لك! سيتم تفعيل VIP قريباً 👑');
+        // Here you would normally integrate with payment system
+    }
+}
+
 function showNotification(message) {
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -737,4 +763,4 @@ function showNotification(message) {
     }, 3000);
 }
 
-// No demo offers - only real user offers
+// No demo offers - only real user offers will be displayed
