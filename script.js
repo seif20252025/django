@@ -44,8 +44,8 @@ function initializeApp() {
 // Storage functions for shared functionality
 function loadOffersFromStorage() {
     try {
-        // Load from shared storage that all users can see
-        const savedOffers = localStorage.getItem('gamesShopSharedOffers');
+        // Load from global shared storage that all users can see across all sessions
+        const savedOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
         if (savedOffers) {
             offers = JSON.parse(savedOffers);
             displayOffers();
@@ -57,8 +57,14 @@ function loadOffersFromStorage() {
 
 function saveOffersToStorage() {
     try {
-        // Save to shared storage that all users can see
-        localStorage.setItem('gamesShopSharedOffers', JSON.stringify(offers));
+        // Save to global shared storage that all users can see across all sessions
+        localStorage.setItem('GLOBAL_GAMES_SHOP_OFFERS', JSON.stringify(offers));
+        
+        // Also trigger a storage event for real-time updates
+        window.dispatchEvent(new StorageEvent('storage', {
+            key: 'GLOBAL_GAMES_SHOP_OFFERS',
+            newValue: JSON.stringify(offers)
+        }));
     } catch (error) {
         console.error('Error saving offers to storage:', error);
     }
@@ -73,7 +79,7 @@ function saveOfferToStorage(offer) {
         offer.timestamp = new Date().toISOString();
         
         // Load existing offers first to ensure we have the latest data
-        const existingOffers = localStorage.getItem('gamesShopSharedOffers');
+        const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
         if (existingOffers) {
             offers = JSON.parse(existingOffers);
         }
@@ -81,7 +87,7 @@ function saveOfferToStorage(offer) {
         // Add new offer to the beginning
         offers.unshift(offer);
         
-        // Save back to shared storage
+        // Save back to global shared storage
         saveOffersToStorage();
         
         return offer;
@@ -424,10 +430,12 @@ function showMainPage() {
     // Check for new messages
     checkForNewMessages();
     
-    // Set up periodic refresh to see new offers from other users
-    setInterval(() => {
-        loadOffersFromStorage();
-    }, 5000); // Refresh every 5 seconds
+    // Set up real-time listening for storage changes from other users
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'GLOBAL_GAMES_SHOP_OFFERS') {
+            loadOffersFromStorage();
+        }
+    });
 }
 
 // Side menu functionality
@@ -601,8 +609,8 @@ function createOfferCard(offer) {
 
 async function toggleLike(offerId) {
     try {
-        // Load current offers
-        const existingOffers = localStorage.getItem('gamesShopSharedOffers');
+        // Load current offers from global storage
+        const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
         if (existingOffers) {
             offers = JSON.parse(existingOffers);
         }
@@ -631,7 +639,7 @@ async function toggleLike(offerId) {
             // Update the offer in array
             offers[offerIndex] = offer;
             
-            // Save back to storage
+            // Save back to global storage
             saveOffersToStorage();
             
             // Update display
@@ -645,8 +653,8 @@ async function toggleLike(offerId) {
 async function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
         try {
-            // Load current offers
-            const existingOffers = localStorage.getItem('gamesShopSharedOffers');
+            // Load current offers from global storage
+            const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
             if (existingOffers) {
                 offers = JSON.parse(existingOffers);
             }
@@ -654,7 +662,7 @@ async function deleteOffer(offerId) {
             // Remove the offer
             offers = offers.filter(offer => offer.id !== offerId);
             
-            // Save back to storage
+            // Save back to global storage
             saveOffersToStorage();
             
             // Update display
