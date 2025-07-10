@@ -1,16 +1,224 @@
+
 <!DOCTYPE html>
-<html>
-
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>replit</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAMES SHOP</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-
 <body>
-  Hello world
-  <script src="script.js"></script>
-</body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-box">
+                <h1>GAMES SHOP</h1>
+                <i class="fas fa-store store-icon"></i>
+                <input type="text" id="usernameInput" placeholder="اكتب اسمك" maxlength="20">
+                <button id="loginBtn" class="login-btn">دخول الي GAMES SHOP</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- Main Page -->
+    <div id="mainPage" class="page">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <i class="fas fa-store store-icon-header"></i>
+                    <h1>GAMES SHOP</h1>
+                </div>
+                <div class="user-section">
+                    <img id="userAvatar" src="" alt="صورة المستخدم" class="user-avatar">
+                    <span id="userName" class="user-name"></span>
+                    <button id="menuBtn" class="menu-btn">Menu🕹️</button>
+                    <button id="addOfferBtn" class="add-offer-btn">اضافه عرض👾</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div id="offersContainer" class="offers-container">
+                <!-- Offers will be displayed here -->
+            </div>
+        </main>
+
+        <!-- Side Menu -->
+        <div id="sideMenu" class="side-menu">
+            <div class="menu-header">
+                <h3>القائمة</h3>
+                <button id="closeMenu" class="close-menu">×</button>
+            </div>
+            <div class="menu-items">
+                <button id="homeBtn" class="menu-item">البيت🏠</button>
+                <button id="messagesBtn" class="menu-item">المراسلات💬</button>
+                <button id="mediatorsBtn" class="menu-item">الوسطاء👤</button>
+                <button id="gameOffersBtn" class="menu-item">عروض لالعاب معينه🕹️</button>
+                <button id="editProfileBtn" class="menu-item">تعديل الحساب🧢</button>
+            </div>
+        </div>
+
+        <!-- Add Offer Modal -->
+        <div id="addOfferModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>اضافة عرض جديد</h3>
+                    <button id="closeAddOffer" class="close-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>اختر اللعبه التي تريد عرض عروض عنها🕹️</label>
+                        <select id="gameSelect" class="form-control">
+                            <option value="">اختر لعبة</option>
+                            <option value="ROBLOX">ROBLOX◻️</option>
+                            <option value="PUBG">PUBG🔫</option>
+                            <option value="FORTNITE">FORTNITE🗡️</option>
+                            <option value="FREE FIRE">FREE FIRE🔥</option>
+                            <option value="MOBILE LEGEND">MOBILE LEGEND📱</option>
+                            <option value="BRAWLHALLA">BRAWLHALLA💥</option>
+                            <option value="BRAWL STARS">BRAWL STARS⭐</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اكتب عرضك هنا🕹️</label>
+                        <textarea id="offerText" class="form-control" placeholder="اكتب تفاصيل العرض هنا"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>اختر طريقه الدفع💰</label>
+                        <div class="payment-options">
+                            <button id="currencyBtn" class="payment-btn">عمله معينه🪙</button>
+                            <button id="otherBtn" class="payment-btn">اي شي اخر🕹️</button>
+                        </div>
+                    </div>
+                    <div id="currencyOptions" class="currency-options hidden">
+                        <div class="currency-buttons">
+                            <button class="currency-btn" data-currency="فلوس💵">فلوس💵</button>
+                            <button class="currency-btn" data-currency="روبوكس🪙">روبوكس🪙</button>
+                            <button class="currency-btn" data-currency="شدات💷">شدات💷</button>
+                            <button class="currency-btn" data-currency="جواهر فري فاير💎">جواهر فري فاير💎</button>
+                            <button class="currency-btn" data-currency="جواهر براول ستارز💎">جواهر براول ستارز💎</button>
+                            <button class="currency-btn" data-currency="جواهر موبيل ليجند💎">جواهر موبيل ليجند💎</button>
+                            <button class="currency-btn" data-currency="V-Bucks🪙">V-Bucks🪙</button>
+                            <button class="currency-btn" data-currency="Mammoth Coins🪙">Mammoth Coins🪙</button>
+                        </div>
+                    </div>
+                    <div id="priceInput" class="form-group hidden">
+                        <label>اكتب السعر💰</label>
+                        <div class="price-container">
+                            <input type="number" id="priceAmount" class="form-control" placeholder="السعر">
+                            <span id="selectedCurrency" class="currency-display"></span>
+                        </div>
+                    </div>
+                    <div id="accountInput" class="form-group hidden">
+                        <label>اكتب بيانات الحساب الذي تريده👤</label>
+                        <textarea id="accountDetails" class="form-control" placeholder="اكتب بيانات الحساب المطلوب"></textarea>
+                    </div>
+                    <button id="submitOffer" class="submit-btn">ارســـــــال▶️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Modal -->
+        <div id="messagesModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>المراسلات💬</h3>
+                    <button class="close-modal" onclick="closeModal('messagesModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div id="messagesList" class="messages-list">
+                        <p>لا توجد محادثات حالياً</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mediators Modal -->
+        <div id="mediatorsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>الوسطاء👤</h3>
+                    <button class="close-modal" onclick="closeModal('mediatorsModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <h4>DISCORD USERS🟦</h4>
+                    <div class="mediators-list">
+                        <div class="mediator">• seif_demon.</div>
+                        <div class="mediator">• eyesnneverlies</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Search Modal -->
+        <div id="gameSearchModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>عروض لالعاب معينه🕹️</h3>
+                    <button class="close-modal" onclick="closeModal('gameSearchModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-container">
+                        <input type="text" id="gameSearchInput" class="form-control" placeholder="ابحث عن اسم اللعبة بالانجليزي">
+                    </div>
+                    <div id="filteredOffers" class="filtered-offers">
+                        <!-- Filtered offers will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile Modal -->
+        <div id="editProfileModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>تعديل الحساب🧢</h3>
+                    <button class="close-modal" onclick="closeModal('editProfileModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>الاسم</label>
+                        <input type="text" id="editNameInput" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>الصورة</label>
+                        <div class="avatar-options">
+                            <img src="https://i.pravatar.cc/150?img=1" class="avatar-option" data-avatar="1">
+                            <img src="https://i.pravatar.cc/150?img=2" class="avatar-option" data-avatar="2">
+                            <img src="https://i.pravatar.cc/150?img=3" class="avatar-option" data-avatar="3">
+                            <img src="https://i.pravatar.cc/150?img=4" class="avatar-option" data-avatar="4">
+                            <img src="https://i.pravatar.cc/150?img=5" class="avatar-option" data-avatar="5">
+                            <img src="https://i.pravatar.cc/150?img=6" class="avatar-option" data-avatar="6">
+                        </div>
+                    </div>
+                    <button id="saveProfile" class="submit-btn">تم</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Modal -->
+        <div id="chatModal" class="modal">
+            <div class="modal-content chat-modal">
+                <div class="modal-header">
+                    <h3 id="chatTitle">مراسلة</h3>
+                    <button class="close-modal" onclick="closeModal('chatModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div id="chatMessages" class="chat-messages">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" class="chat-input" placeholder="اكتب رسالتك...">
+                        <button id="sendMessage" class="send-btn">ارسال</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
 </html>
