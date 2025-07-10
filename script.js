@@ -31,47 +31,56 @@ function initializeApp() {
         showLoginPage();
     }
 
-    // Load data from server
-    loadOffersFromServer();
-    loadConversationsFromServer();
-    loadUserSettingsFromServer();
-    loadMembersFromServer();
+    // Load data from localStorage for offline functionality
+    loadOffersFromStorage();
+    loadConversationsFromStorage();
+    loadUserSettingsFromStorage();
+    loadMembersFromStorage();
 
     // Event listeners
     setupEventListeners();
 }
 
-// Server API functions
-async function loadOffersFromServer() {
+// Storage functions for offline functionality
+function loadOffersFromStorage() {
     try {
-        const response = await fetch(`${API_BASE}/api/offers`);
-        if (response.ok) {
-            offers = await response.json();
+        const savedOffers = localStorage.getItem('gamesShopOffers');
+        if (savedOffers) {
+            offers = JSON.parse(savedOffers);
             displayOffers();
         }
     } catch (error) {
-        console.error('Error loading offers:', error);
+        console.error('Error loading offers from storage:', error);
     }
 }
 
-async function saveOfferToServer(offer) {
+function saveOffersToStorage() {
     try {
-        const response = await fetch(`${API_BASE}/api/offers`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(offer)
-        });
+        localStorage.setItem('gamesShopOffers', JSON.stringify(offers));
+    } catch (error) {
+        console.error('Error saving offers to storage:', error);
+    }
+}
 
-        if (response.ok) {
-            const result = await response.json();
-            return result.offer;
-        }
+function saveOfferToStorage(offer) {
+    try {
+        // Generate unique ID
+        offer.id = Date.now() + Math.random();
+        offer.likes = 0;
+        offer.likedBy = [];
+        offer.timestamp = new Date().toISOString();
+        
+        // Add to offers array
+        offers.unshift(offer);
+        
+        // Save to localStorage
+        saveOffersToStorage();
+        
+        return offer;
     } catch (error) {
         console.error('Error saving offer:', error);
+        return null;
     }
-    return null;
 }
 
 async function deleteOfferFromServer(offerId) {
@@ -106,16 +115,24 @@ async function likeOfferOnServer(offerId) {
     return null;
 }
 
-async function loadConversationsFromServer() {
+function loadConversationsFromStorage() {
     if (!currentUser) return;
 
     try {
-        const response = await fetch(`${API_BASE}/api/conversations/${currentUser.id}`);
-        if (response.ok) {
-            conversations = await response.json();
+        const savedConversations = localStorage.getItem('gamesShopConversations');
+        if (savedConversations) {
+            conversations = JSON.parse(savedConversations);
         }
     } catch (error) {
-        console.error('Error loading conversations:', error);
+        console.error('Error loading conversations from storage:', error);
+    }
+}
+
+function saveConversationsToStorage() {
+    try {
+        localStorage.setItem('gamesShopConversations', JSON.stringify(conversations));
+    } catch (error) {
+        console.error('Error saving conversations to storage:', error);
     }
 }
 
@@ -139,14 +156,22 @@ async function saveMessageToServer(chatId, message) {
     return null;
 }
 
-async function loadMembersFromServer() {
+function loadMembersFromStorage() {
     try {
-        const response = await fetch(`${API_BASE}/api/members`);
-        if (response.ok) {
-            registeredMembers = await response.json();
+        const savedMembers = localStorage.getItem('gamesShopMembers');
+        if (savedMembers) {
+            registeredMembers = JSON.parse(savedMembers);
         }
     } catch (error) {
-        console.error('Error loading members:', error);
+        console.error('Error loading members from storage:', error);
+    }
+}
+
+function saveMembersToStorage() {
+    try {
+        localStorage.setItem('gamesShopMembers', JSON.stringify(registeredMembers));
+    } catch (error) {
+        console.error('Error saving members to storage:', error);
     }
 }
 
@@ -171,16 +196,28 @@ async function saveMemberToServer(member) {
     return false;
 }
 
-async function loadUserSettingsFromServer() {
+function loadUserSettingsFromStorage() {
     if (!currentUser) return;
 
     try {
-        const response = await fetch(`${API_BASE}/api/settings/${currentUser.id}`);
-        if (response.ok) {
-            userSettings = await response.json();
+        const savedSettings = localStorage.getItem(`gamesShopSettings_${currentUser.id}`);
+        if (savedSettings) {
+            userSettings = JSON.parse(savedSettings);
         }
     } catch (error) {
-        console.error('Error loading user settings:', error);
+        console.error('Error loading user settings from storage:', error);
+    }
+}
+
+function saveUserSettingsToStorage() {
+    if (!currentUser) return;
+
+    try {
+        localStorage.setItem(`gamesShopSettings_${currentUser.id}`, JSON.stringify(userSettings));
+        return true;
+    } catch (error) {
+        console.error('Error saving user settings to storage:', error);
+        return false;
     }
 }
 
@@ -355,7 +392,7 @@ function showLoginPage() {
     document.getElementById('mainPage').classList.remove('active');
 }
 
-async function showMainPage() {
+function showMainPage() {
     document.getElementById('loginPage').classList.remove('active');
     document.getElementById('mainPage').classList.add('active');
 
@@ -364,14 +401,14 @@ async function showMainPage() {
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
     updateVexDisplay();
 
-    // Register member on server
-    await registerMember();
+    // Register member
+    registerMember();
 
-    // Load all data from server
-    await loadOffersFromServer();
-    await loadConversationsFromServer();
-    await loadUserSettingsFromServer();
-    await loadMembersFromServer();
+    // Load all data from storage
+    loadOffersFromStorage();
+    loadConversationsFromStorage();
+    loadUserSettingsFromStorage();
+    loadMembersFromStorage();
 
     // Display offers
     displayOffers();
@@ -434,7 +471,7 @@ function selectCurrency(currency) {
     document.getElementById('currencyOptions').classList.add('hidden');
 }
 
-async function submitOffer() {
+function submitOffer() {
     const game = document.getElementById('gameSelect').value;
     const offerText = document.getElementById('offerText').value.trim();
     const priceAmount = document.getElementById('priceAmount').value;
@@ -457,8 +494,8 @@ async function submitOffer() {
     }
 
     // Show security warning before submitting
-    showSecurityWarning(async () => {
-        const isVIP = await checkVIPStatus();
+    showSecurityWarning(() => {
+        const isVIP = checkVIPStatusLocal();
 
         const newOffer = {
             userId: currentUser.id,
@@ -470,15 +507,20 @@ async function submitOffer() {
             isVIP: isVIP
         };
 
-        const savedOffer = await saveOfferToServer(newOffer);
+        const savedOffer = saveOfferToStorage(newOffer);
         if (savedOffer) {
-            await loadOffersFromServer(); // Reload all offers
+            displayOffers();
             closeAddOfferModal();
             showNotification('تم إضافة العرض بنجاح! 🎉');
         } else {
             alert('حدث خطأ في إضافة العرض');
         }
     });
+}
+
+function checkVIPStatusLocal() {
+    const vipStatus = localStorage.getItem(`vip_${currentUser.id}`);
+    return vipStatus === 'true';
 }
 
 // Offers display
@@ -1226,16 +1268,27 @@ async function showMembersModal() {
     loadMembersList();
 }
 
-async function registerMember() {
+function registerMember() {
     if (!currentUser) return;
 
     const member = {
         id: currentUser.id,
         name: currentUser.name,
-        avatar: currentUser.avatar
+        avatar: currentUser.avatar,
+        joinTime: new Date().toISOString()
     };
 
-    await saveMemberToServer(member);
+    // Check if member already exists
+    const existingMemberIndex = registeredMembers.findIndex(m => m.id === currentUser.id);
+    if (existingMemberIndex !== -1) {
+        // Update existing member
+        registeredMembers[existingMemberIndex] = member;
+    } else {
+        // Add new member
+        registeredMembers.push(member);
+    }
+
+    saveMembersToStorage();
 }
 
 function loadMembersList() {
