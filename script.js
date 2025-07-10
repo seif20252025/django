@@ -251,10 +251,7 @@ function setupEventListeners() {
         closeSideMenu();
         joinDiscordServer();
     });
-    document.getElementById('updatesBtn').addEventListener('click', () => {
-        closeSideMenu();
-        showUpdatesModal();
-    });
+    
     document.getElementById('marketBtn').addEventListener('click', () => {
         closeSideMenu();
         showMarketModal();
@@ -1489,11 +1486,40 @@ function clearMessageNotification() {
 
 // AdSense initialization
 function initializeAds() {
-    if (typeof adsbygoogle !== 'undefined') {
+    // Initialize all AdSense ads on the page
+    const adsenseElements = document.querySelectorAll('.adsbygoogle');
+    
+    adsenseElements.forEach((ad, index) => {
         try {
-            (adsbygoogle = window.adsbygoogle || []).push({});
+            if (window.adsbygoogle && !ad.hasAttribute('data-adsbygoogle-status')) {
+                setTimeout(() => {
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                    console.log(`✅ تم تحميل الإعلان ${index + 1}`);
+                }, index * 500); // تأخير بسيط بين الإعلانات
+            }
         } catch (e) {
-            console.log('AdSense not loaded yet');
+            console.log(`⚠️ خطأ في تحميل الإعلان ${index + 1}:`, e);
         }
+    });
+    
+    // إعادة تحميل الإعلانات كل 30 ثانية
+    setInterval(() => {
+        refreshAds();
+    }, 30000);
+}
+
+function refreshAds() {
+    try {
+        const adsenseElements = document.querySelectorAll('.adsbygoogle');
+        adsenseElements.forEach((ad, index) => {
+            if (!ad.hasAttribute('data-adsbygoogle-status')) {
+                setTimeout(() => {
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                }, index * 100);
+            }
+        });
+        console.log('🔄 تم تحديث الإعلانات');
+    } catch (e) {
+        console.log('خطأ في تحديث الإعلانات:', e);
     }
 }
