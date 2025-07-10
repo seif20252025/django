@@ -61,29 +61,36 @@ function initializeApp() {
     setupEventListeners();
 }
 
-// نظام العروض العالمي الجديد
-function loadOffersFromGlobalStorage() {
+// نظام العروض العالمي الجديد مع الخادم
+async function loadOffersFromGlobalStorage() {
     try {
+        // محاولة تحميل العروض من الخادم أولاً
+        const response = await fetch(`${API_BASE_URL}/api/offers`);
+        if (response.ok) {
+            offers = await response.json();
+            console.log('✅ تم تحميل العروض من الخادم:', offers.length);
+        } else {
+            throw new Error('Failed to fetch from server');
+        }
+    } catch (error) {
+        console.log('⚠️ فشل تحميل من الخادم، محاولة تحميل من التخزين المحلي:', error);
+        // في حالة فشل الخادم، استخدم التخزين المحلي
         const globalOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
         offers = globalOffers ? JSON.parse(globalOffers) : [];
-
-        // ترتيب العروض حسب التاريخ (الأحدث أولاً)
-        offers.sort((a, b) => {
-            const timeA = new Date(a.timestamp || 0).getTime();
-            const timeB = new Date(b.timestamp || 0).getTime();
-            return timeB - timeA;
-        });
-
-        displayOffers();
-        console.log('تم تحميل العروض العالمية:', offers.length);
-    } catch (error) {
-        console.error('خطأ في تحميل العروض:', error);
-        offers = [];
-        displayOffers();
     }
+
+    // ترتيب العروض حسب التاريخ (الأحدث أولاً)
+    offers.sort((a, b) => {
+        const timeA = new Date(a.timestamp || 0).getTime();
+        const timeB = new Date(b.timestamp || 0).getTime();
+        return timeB - timeA;
+    });
+
+    displayOffers();
+    console.log('📋 إجمالي العروض المعروضة:', offers.length);
 }
 
-function saveOfferToGlobalStorage(offer) {
+async function saveOfferToGlobalStorage(offer) {
     try {
         // إنشاء معرف فريد للعرض
         offer.id = Date.now() + Math.random();
@@ -91,20 +98,34 @@ function saveOfferToGlobalStorage(offer) {
         offer.likedBy = [];
         offer.timestamp = new Date().toISOString();
 
-        // تحميل العروض الحالية
-        const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
-        offers = currentOffers ? JSON.parse(currentOffers) : [];
+        // محاولة حفظ في الخادم أولاً
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/offers`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(offer)
+            });
 
-        // إضافة العرض الجديد في المقدمة
-        offers.unshift(offer);
-
-        // حفظ العروض المحدثة
-        localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+            if (response.ok) {
+                const result = await response.json();
+                offers = result.offers || [offer];
+                console.log('✅ تم حفظ العرض في الخادم:', offer);
+            } else {
+                throw new Error('Server save failed');
+            }
+        } catch (serverError) {
+            console.log('⚠️ فشل حفظ في الخادم، حفظ محلي:', serverError);
+            // في حالة فشل الخادم، احفظ محلياً
+            const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
+            offers = currentOffers ? JSON.parse(currentOffers) : [];
+            offers.unshift(offer);
+            localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+        }
 
         // عرض العروض المحدثة
         displayOffers();
-
-        console.log('تم حفظ العرض عالمياً:', offer);
         return offer;
     } catch (error) {
         console.error('خطأ في حفظ العرض:', error);
@@ -500,44 +521,82 @@ function createOfferCard(offer) {
     return card;
 }
 
-function toggleLike(offerId) {
+async function toggleLike(offerId) {
     try {
-        const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
-        offers = currentOffers ? JSON.parse(currentOffers) : [];
+        // محاولة تحديث الإعجاب في الخادم أولاً
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/offers/${offerId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId: currentUser.id })
+            });
 
-        const offerIndex = offers.findIndex(o => o.id === offerId);
-        if (offerIndex !== -1) {
-            const offer = offers[offerIndex];
-
-            if (!offer.likedBy) offer.likedBy = [];
-            if (!offer.likes) offer.likes = 0;
-
-            const userIndex = offer.likedBy.indexOf(currentUser.id);
-            if (userIndex > -1) {
-                offer.likedBy.splice(userIndex, 1);
-                offer.likes = Math.max(0, offer.likes - 1);
+            if (response.ok) {
+                const result = await response.json();
+                // تحديث العرض في القائمة المحلية
+                const offerIndex = offers.findIndex(o => o.id === offerId);
+                if (offerIndex !== -1) {
+                    offers[offerIndex] = result.offer;
+                }
+                console.log('✅ تم تحديث الإعجاب في الخادم');
             } else {
-                offer.likedBy.push(currentUser.id);
-                offer.likes = (offer.likes || 0) + 1;
+                throw new Error('Server like failed');
             }
+        } catch (serverError) {
+            console.log('⚠️ فشل تحديث الإعجاب في الخادم، تحديث محلي:', serverError);
+            // في حالة فشل الخادم، حدث محلياً
+            const offerIndex = offers.findIndex(o => o.id === offerId);
+            if (offerIndex !== -1) {
+                const offer = offers[offerIndex];
 
-            offers[offerIndex] = offer;
-            localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
-            displayOffers();
+                if (!offer.likedBy) offer.likedBy = [];
+                if (!offer.likes) offer.likes = 0;
+
+                const userIndex = offer.likedBy.indexOf(currentUser.id);
+                if (userIndex > -1) {
+                    offer.likedBy.splice(userIndex, 1);
+                    offer.likes = Math.max(0, offer.likes - 1);
+                } else {
+                    offer.likedBy.push(currentUser.id);
+                    offer.likes = (offer.likes || 0) + 1;
+                }
+
+                offers[offerIndex] = offer;
+                localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+            }
         }
+
+        displayOffers();
     } catch (error) {
         console.error('Error toggling like:', error);
     }
 }
 
-function deleteOffer(offerId) {
+async function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
         try {
-            const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
-            offers = currentOffers ? JSON.parse(currentOffers) : [];
+            // محاولة حذف من الخادم أولاً
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/offers/${offerId}`, {
+                    method: 'DELETE'
+                });
 
-            offers = offers.filter(offer => offer.id !== offerId);
-            localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+                if (response.ok) {
+                    const result = await response.json();
+                    offers = result.offers || [];
+                    console.log('✅ تم حذف العرض من الخادم');
+                } else {
+                    throw new Error('Server delete failed');
+                }
+            } catch (serverError) {
+                console.log('⚠️ فشل حذف من الخادم، حذف محلي:', serverError);
+                // في حالة فشل الخادم، احذف محلياً
+                offers = offers.filter(offer => offer.id !== offerId);
+                localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
+            }
+
             displayOffers();
             showNotification('تم حذف العرض بنجاح 🗑️');
         } catch (error) {
@@ -550,6 +609,14 @@ function deleteOffer(offerId) {
 function showAllOffers() {
     loadOffersFromGlobalStorage();
 }
+
+// تحديث تلقائي للعروض كل 30 ثانية
+setInterval(async () => {
+    if (currentUser) {
+        await loadOffersFromGlobalStorage();
+        console.log('🔄 تم تحديث العروض تلقائياً');
+    }
+}, 30000);
 
 // Chat functionality
 function startChat(partnerName, partnerId) {
