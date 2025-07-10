@@ -32,7 +32,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m http.server 8080"
+args = "static-web-server -w ./.config/static-web-server.toml"
 
 [[ports]]
 localPort = 80
