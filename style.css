@@ -157,6 +157,32 @@ body {
     gap: 1rem;
 }
 
+.vex-balance {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 191, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    border: 2px solid #00bfff;
+}
+
+.vex-icon {
+    background: linear-gradient(45deg, #0080ff, #004080);
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0, 128, 255, 0.4);
+}
+
+.vex-amount {
+    color: #00bfff;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
 .user-avatar {
     width: 50px;
     height: 50px;

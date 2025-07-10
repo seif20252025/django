@@ -5,6 +5,7 @@ let offers = [];
 let conversations = {};
 let currentChatPartner = null;
 let selectedAvatar = 1;
+let userVexBalance = 1000; // Starting balance
 let userSettings = {
     allowMessages: true,
     blockedUsers: []
@@ -30,6 +31,7 @@ function initializeApp() {
     loadOffers();
     loadConversations();
     loadUserSettings();
+    loadVexBalance();
     
     // Event listeners
     setupEventListeners();
@@ -74,6 +76,10 @@ function setupEventListeners() {
     document.getElementById('supportBtn').addEventListener('click', () => {
         closeSideMenu();
         showSupportModal();
+    });
+    document.getElementById('discordBtn').addEventListener('click', () => {
+        closeSideMenu();
+        joinDiscordServer();
     });
     document.getElementById('marketBtn').addEventListener('click', () => {
         closeSideMenu();
@@ -151,6 +157,7 @@ function showMainPage() {
     // Update user info
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
+    updateVexDisplay();
     
     // Display offers
     displayOffers();
@@ -553,6 +560,7 @@ function saveProfile() {
     // Update display
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
+    updateVexDisplay();
     
     closeModal('editProfileModal');
     showNotification('تم حفظ الاعدادات بنجاح! ✅');
@@ -714,43 +722,24 @@ function showMarketModal() {
 
 // VIP purchase
 function buyVIP() {
-    // التحقق من الرصيد أولاً
-    checkUserBalance().then(hasEnoughBalance => {
-        if (!hasEnoughBalance) {
-            showInsufficientBalanceModal();
-            return;
-        }
-        
-        if (confirm('هل تريد شراء VIP مقابل 30 LE؟')) {
-            showPaymentProcess();
-        }
-    });
-}
-
-// Check if user has enough balance
-async function checkUserBalance() {
-    try {
-        const userBalance = await getUserBalance();
-        return userBalance >= 30; // VIP price
-    } catch (error) {
-        console.error('Error checking balance:', error);
-        return false;
+    const vipPrice = 10000;
+    
+    if (userVexBalance < vipPrice) {
+        showInsufficientVexModal();
+        return;
+    }
+    
+    if (confirm(`هل تريد شراء VIP مقابل ${vipPrice} Vex؟`)) {
+        // Deduct Vex and activate VIP
+        userVexBalance -= vipPrice;
+        saveVexBalance();
+        updateVexDisplay();
+        activateVIP(currentUser.id);
+        showNotification('تم شراء VIP بنجاح! 👑');
     }
 }
 
-// Get user balance (simulate checking from payment provider)
-async function getUserBalance() {
-    // This would connect to actual payment provider API
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Simulate random balance between 0-100
-            const balance = Math.floor(Math.random() * 100);
-            resolve(balance);
-        }, 1000);
-    });
-}
-
-function showInsufficientBalanceModal() {
+function showInsufficientVexModal() {
     const balanceModal = document.createElement('div');
     balanceModal.className = 'modal active';
     balanceModal.id = 'balanceModal';
@@ -758,22 +747,52 @@ function showInsufficientBalanceModal() {
     balanceModal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
-                <h3>رصيد غير كافي 💰</h3>
+                <h3>رصيد Vex غير كافي 💰</h3>
                 <button class="close-modal" onclick="closeBalanceModal()">×</button>
             </div>
             <div class="modal-body">
                 <div class="balance-warning">
-                    <i class="fas fa-wallet" style="font-size: 3rem; color: #ff4757; margin-bottom: 1rem;"></i>
-                    <h4>عذراً، رصيدك غير كافي لإتمام هذه العملية</h4>
-                    <p>سعر VIP: 30 LE</p>
-                    <p>يرجى إضافة رصيد إلى محفظتك أولاً</p>
-                    <button class="submit-btn" onclick="showAddBalanceModal()">إضافة رصيد</button>
+                    <div class="vex-icon" style="font-size: 3rem; margin-bottom: 1rem;">Vex</div>
+                    <h4>عذراً، رصيدك من Vex غير كافي لإتمام هذه العملية</h4>
+                    <p>سعر VIP: 10,000 Vex</p>
+                    <p>رصيدك الحالي: ${userVexBalance} Vex</p>
+                    <p>يمكنك الحصول على المزيد من Vex من خلال الأنشطة في الموقع</p>
                 </div>
             </div>
         </div>
     `;
     
     document.body.appendChild(balanceModal);
+}
+
+function loadVexBalance() {
+    const savedBalance = localStorage.getItem('userVexBalance');
+    if (savedBalance) {
+        userVexBalance = parseInt(savedBalance);
+    }
+}
+
+function saveVexBalance() {
+    localStorage.setItem('userVexBalance', userVexBalance.toString());
+}
+
+function updateVexDisplay() {
+    const vexElement = document.getElementById('userVexBalance');
+    if (vexElement) {
+        vexElement.textContent = userVexBalance.toLocaleString();
+    }
+}
+
+function addVex(amount) {
+    userVexBalance += amount;
+    saveVexBalance();
+    updateVexDisplay();
+    showNotification(`تم إضافة ${amount} Vex إلى رصيدك! 💰`);
+}
+
+function joinDiscordServer() {
+    window.open('https://discord.gg/4yWU9JGt', '_blank');
+    showNotification('تم فتح رابط سيرفر الديسكورد! 🟦');
 }
 
 function closeBalanceModal() {
@@ -783,231 +802,7 @@ function closeBalanceModal() {
     }
 }
 
-function showAddBalanceModal() {
-    closeBalanceModal();
-    showPaymentProcess(true); // true indicates this is for adding balance
-}
-
-// Payment processing
-function showPaymentProcess(isAddingBalance = false) {
-    const amount = isAddingBalance ? '50' : '30';
-    const purpose = isAddingBalance ? 'إضافة رصيد' : 'شراء VIP';
-    
-    const paymentModal = document.createElement('div');
-    paymentModal.className = 'modal active';
-    paymentModal.id = 'paymentModal';
-    
-    paymentModal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>${purpose} 💳</h3>
-                <button class="close-modal" onclick="closePaymentModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="payment-form">
-                    <h4>تفاصيل الدفع</h4>
-                    <div class="form-group">
-                        <label>المبلغ</label>
-                        <input type="text" value="${amount} LE" readonly class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>رقم الهاتف للدفع</label>
-                        <input type="tel" id="paymentPhone" class="form-control" placeholder="أدخل رقم هاتفك">
-                    </div>
-                    <div class="form-group">
-                        <label>طريقة الدفع</label>
-                        <select id="paymentMethod" class="form-control">
-                            <option value="">اختر طريقة الدفع</option>
-                            <optgroup label="محافظ إلكترونية">
-                                <option value="vodafone_cash">فودافون كاش 📱</option>
-                                <option value="orange_money">أورانج موني 🧡</option>
-                                <option value="etisalat_cash">اتصالات كاش 💚</option>
-                                <option value="we_pay">WE Pay 💙</option>
-                            </optgroup>
-                            <optgroup label="بنوك مصرية">
-                                <option value="cib_wallet">CIB Wallet 🏦</option>
-                                <option value="nbe_wallet">البنك الأهلي 🇪🇬</option>
-                                <option value="banque_misr">بنك مصر 🏛️</option>
-                            </optgroup>
-                            <optgroup label="طرق دفع أخرى">
-                                <option value="fawry">فوري 💰</option>
-                                <option value="aman">أمان 🔒</option>
-                                <option value="masary">مصاري 💳</option>
-                                <option value="card">كارت ائتمان/خصم 💳</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div class="payment-instructions" id="paymentInstructions" style="display: none;">
-                        <div class="instruction-content">
-                            <h5>تعليمات الدفع:</h5>
-                            <p id="instructionText"></p>
-                        </div>
-                    </div>
-                    <button class="submit-btn" onclick="processPayment(${isAddingBalance})">تأكيد الدفع</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(paymentModal);
-    
-    // Add event listener for payment method change
-    document.getElementById('paymentMethod').addEventListener('change', showPaymentInstructions);
-}
-
-function showPaymentInstructions() {
-    const method = document.getElementById('paymentMethod').value;
-    const instructionsDiv = document.getElementById('paymentInstructions');
-    const instructionText = document.getElementById('instructionText');
-    
-    const instructions = {
-        'vodafone_cash': 'اطلب *9*رقم_التاجر*المبلغ# من هاتفك فودافون أو استخدم تطبيق Ana Vodafone',
-        'orange_money': 'ادخل على تطبيق Orange Money واختر الدفع للتاجر',
-        'etisalat_cash': 'استخدم تطبيق Etisalat Cash أو اطلب كود الدفع',
-        'we_pay': 'ادخل على تطبيق WE واختر الدفع الإلكتروني',
-        'cib_wallet': 'استخدم تطبيق CIB Mobile أو CIB Wallet',
-        'nbe_wallet': 'ادخل على تطبيق الأهلي موبايل أو الأهلي نت',
-        'banque_misr': 'استخدم تطبيق BM Mobile أو BM Online',
-        'fawry': 'توجه لأقرب نقطة فوري واعط الكود المرسل',
-        'aman': 'استخدم كود أمان من أقرب نقطة خدمة',
-        'masary': 'ادخل على تطبيق مصاري أو الموقع الإلكتروني',
-        'card': 'ستتم إعادة توجيهك لصفحة الدفع الآمنة'
-    };
-    
-    if (method && instructions[method]) {
-        instructionText.textContent = instructions[method];
-        instructionsDiv.style.display = 'block';
-    } else {
-        instructionsDiv.style.display = 'none';
-    }
-}
-
-function closePaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-async function processPayment(isAddingBalance = false) {
-    const phone = document.getElementById('paymentPhone').value;
-    const method = document.getElementById('paymentMethod').value;
-    
-    if (!phone) {
-        showNotification('من فضلك أدخل رقم الهاتف');
-        return;
-    }
-    
-    if (!method) {
-        showNotification('من فضلك اختر طريقة الدفع');
-        return;
-    }
-    
-    showNotification('جاري معالجة الدفع... ⏳');
-    
-    try {
-        // Get user info from Replit Auth
-        const userInfo = await getUserInfo();
-        
-        // Create payment request
-        const paymentData = {
-            amount: isAddingBalance ? 50 : 30,
-            currency: 'EGP',
-            customerPhone: phone,
-            paymentMethod: method,
-            userId: userInfo.id,
-            userName: userInfo.name,
-            product: isAddingBalance ? 'Add Balance' : 'VIP Package'
-        };
-        
-        // Process payment
-        const result = await processRealPayment(paymentData);
-        
-        if (result.success) {
-            if (isAddingBalance) {
-                // Add balance to user account
-                showNotification('تم إضافة الرصيد بنجاح! 💰');
-            } else {
-                // Activate VIP for user
-                activateVIP(userInfo.id);
-                showNotification('تم الدفع بنجاح! تم تفعيل VIP 👑');
-            }
-            closePaymentModal();
-        } else {
-            showNotification('فشل في الدفع. حاول مرة أخرى');
-        }
-    } catch (error) {
-        console.error('Payment error:', error);
-        showNotification('حدث خطأ في النظام. حاول مرة أخرى');
-    }
-}
-
-async function getUserInfo() {
-    try {
-        const response = await fetch('/__replauthuser');
-        if (response.ok) {
-            return await response.json();
-        } else {
-            // Fallback to current user if not using Replit Auth
-            return currentUser;
-        }
-    } catch (error) {
-        return currentUser;
-    }
-}
-
-async function processRealPayment(paymentData) {
-    // تحويل الأموال عبر نظام دفع حقيقي
-    const paymentEndpoint = '/api/payment';
-    
-    try {
-        const response = await fetch(paymentEndpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(paymentData)
-        });
-        
-        return await response.json();
-    } catch (error) {
-        // محاكاة نظام دفع حقيقي
-        return await simulatePaymentService(paymentData);
-    }
-}
-
-async function simulatePaymentService(paymentData) {
-    // محاكاة خدمة دفع حقيقية
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // محاكاة نجاح الدفع
-            const success = Math.random() > 0.1; // 90% نجاح
-            
-            if (success) {
-                // تسجيل المعاملة
-                logPaymentTransaction(paymentData);
-                resolve({ success: true, transactionId: Date.now() });
-            } else {
-                resolve({ success: false, error: 'فشل في الدفع' });
-            }
-        }, 2000);
-    });
-}
-
-function logPaymentTransaction(paymentData) {
-    // تسجيل المعاملة في Local Storage
-    const transactions = JSON.parse(localStorage.getItem('paymentTransactions') || '[]');
-    
-    const transaction = {
-        id: Date.now(),
-        ...paymentData,
-        timestamp: new Date().toISOString(),
-        status: 'completed'
-    };
-    
-    transactions.push(transaction);
-    localStorage.setItem('paymentTransactions', JSON.stringify(transactions));
-}
+// Simplified VIP activation without payment processing
 
 function activateVIP(userId) {
     // تفعيل VIP للمستخدم
