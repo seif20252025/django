@@ -50,6 +50,25 @@ body {
 
 
 /* Enhanced AdSense Styles */
+.adsense-container {
+    background: rgba(0, 191, 255, 0.05);
+    padding: 1rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 191, 255, 0.2);
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.1);
+}
+
+.adsense-container .adsbygoogle {
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 250px;
+    background: rgba(255, 255, 255, 0.02);
+    display: block !important;
+}
+
 .adsense-main-container {
     background: rgba(0, 191, 255, 0.1);
     padding: 1.5rem;
@@ -67,6 +86,12 @@ body {
     min-height: 280px;
     background: rgba(255, 255, 255, 0.05);
     display: block !important;
+}
+
+.footer-adsense {
+    margin-top: 3rem;
+    padding: 2rem 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 191, 255, 0.1));
 }
 
 .ad-overlay {
@@ -245,13 +270,18 @@ body {
     box-shadow: 0 8px 20px rgba(0, 191, 255, 0.5);
 }
 
-.members-btn {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+.updates-btn {
+    background: linear-gradient(45deg, #1a1a2e, #00bfff);
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.3);
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 191, 255, 0.7);
 }
 
-.members-btn:hover {
-    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
+.updates-btn:hover {
+    box-shadow: 0 8px 20px rgba(0, 191, 255, 0.6);
+    transform: translateY(-2px);
+    background: linear-gradient(45deg, #0a0a1a, #0099cc);
 }
 
 /* Main Content */

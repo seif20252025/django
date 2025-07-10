@@ -260,9 +260,9 @@ function setupEventListeners() {
         showMarketModal();
     });
 
-    // Members button
-    document.getElementById('membersBtn').addEventListener('click', () => {
-        showMembersModal();
+    // Updates button in header
+    document.getElementById('updatesBtn').addEventListener('click', () => {
+        showUpdatesModal();
     });
 
     // Add offer
@@ -318,14 +318,30 @@ function setupEventListeners() {
     window.addEventListener('storage', function(e) {
         if (e.key === GLOBAL_OFFERS_KEY) {
             loadOffersFromGlobalStorage();
-        } else if (e.key === 'newMessageNotification') {
-            const notification = JSON.parse(e.newValue);
-            if (notification.recipientId === currentUser.id) {
-                showMessageNotification();
-                loadMessagesList();
+        } else if (e.key === 'newMessageNotification' && e.newValue) {
+            try {
+                const notification = JSON.parse(e.newValue);
+                if (notification && notification.recipientId === currentUser.id) {
+                    showMessageNotification();
+                    loadConversationsFromStorage();
+                    loadMessagesList();
+                    console.log('📩 تم استلام إشعار رسالة جديدة');
+                }
+            } catch (error) {
+                console.error('خطأ في معالجة إشعار الرسالة:', error);
             }
+        } else if (e.key === 'gamesShopConversations') {
+            loadConversationsFromStorage();
+            checkForNewMessages();
         }
     });
+    
+    // فحص دوري للرسائل الجديدة
+    setInterval(() => {
+        if (currentUser) {
+            checkForNewMessages();
+        }
+    }, 10000); // كل 10 ثوانٍ
 }
 
 // Auth functionality
@@ -942,22 +958,38 @@ function showImageModal(imageSrc) {
 }
 
 function notifyNewMessage(recipientId) {
-    // This would typically send a notification to the recipient
-    // For now, we'll just trigger a storage event to update other tabs
-    const notification = {
-        recipientId: recipientId,
-        senderId: currentUser.id,
-        senderName: currentUser.name,
-        timestamp: new Date().toISOString()
-    };
-    localStorage.setItem('newMessageNotification', JSON.stringify(notification));
-    
-    // Also store in a more persistent way for message notifications
-    const existingNotifications = JSON.parse(localStorage.getItem('messageNotifications') || '[]');
-    existingNotifications.push(notification);
-    localStorage.setItem('messageNotifications', JSON.stringify(existingNotifications));
-    
-    console.log(`📩 تم إرسال إشعار رسالة جديدة إلى المستخدم ${recipientId}`);
+    try {
+        const notification = {
+            recipientId: recipientId,
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            timestamp: new Date().toISOString(),
+            id: Date.now() + Math.random()
+        };
+        
+        // تحديث الإشعار الفوري
+        localStorage.setItem('newMessageNotification', JSON.stringify(notification));
+        
+        // حفظ الإشعارات بشكل دائم
+        const existingNotifications = JSON.parse(localStorage.getItem('messageNotifications') || '[]');
+        existingNotifications.push(notification);
+        
+        // الاحتفاظ بآخر 50 إشعار فقط
+        if (existingNotifications.length > 50) {
+            existingNotifications.splice(0, existingNotifications.length - 50);
+        }
+        
+        localStorage.setItem('messageNotifications', JSON.stringify(existingNotifications));
+        
+        // إزالة الإشعار الفوري بعد ثانية واحدة
+        setTimeout(() => {
+            localStorage.removeItem('newMessageNotification');
+        }, 1000);
+        
+        console.log(`📩 تم إرسال إشعار رسالة جديدة إلى المستخدم ${recipientId}`);
+    } catch (error) {
+        console.error('خطأ في إرسال إشعار الرسالة:', error);
+    }
 }
 
 function getChatId(userId1, userId2) {
@@ -1404,6 +1436,8 @@ function showSecurityWarning(callback) {
 }
 
 function checkForNewMessages() {
+    if (!currentUser) return;
+    
     const userChats = Object.keys(conversations).filter(chatId => 
         chatId.includes(currentUser.id.toString())
     );
@@ -1416,7 +1450,7 @@ function checkForNewMessages() {
             if (lastMessage.senderId !== currentUser.id) {
                 const messageTime = new Date(lastMessage.timestamp);
                 const now = new Date();
-                if (now - messageTime < 300000) { // رسالة جديدة خلال آخر 5 دقائق
+                if (now - messageTime < 600000) { // رسالة جديدة خلال آخر 10 دقائق
                     hasNew = true;
                 }
             }
@@ -1428,7 +1462,7 @@ function checkForNewMessages() {
     const recentNotifications = notifications.filter(notif => {
         const notifTime = new Date(notif.timestamp);
         const now = new Date();
-        return notif.recipientId === currentUser.id && (now - notifTime < 300000);
+        return notif.recipientId === currentUser.id && (now - notifTime < 600000);
     });
 
     if ((hasNew || recentNotifications.length > 0) && !hasNewMessages) {
