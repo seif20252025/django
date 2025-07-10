@@ -38,41 +38,29 @@ function initializeApp() {
     setupEventListeners();
 }
 
-// مفتاح عالمي لحفظ العروض يمكن للجميع رؤيته
-const GLOBAL_OFFERS_KEY = 'GLOBAL_SHARED_OFFERS_ALL_USERS';
-
-// نظام تخزين العروض العالمي
+// نظام العروض العالمي من خلال الخادم
 async function loadOffersFromGlobalStorage() {
     try {
-        // محاولة تحميل العروض من التخزين العالمي
-        const globalOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
-        if (globalOffers) {
-            offers = JSON.parse(globalOffers);
+        // محاولة تحميل العروض من الخادم أولاً
+        const response = await fetch('/api/offers');
+        if (response.ok) {
+            const serverOffers = await response.json();
+            offers = serverOffers || [];
+            console.log('تم تحميل العروض من الخادم:', offers.length);
         } else {
-            offers = [];
+            // في حالة عدم توفر الخادم، استخدم localStorage كاحتياطي
+            const localOffers = localStorage.getItem('backupOffers');
+            offers = localOffers ? JSON.parse(localOffers) : [];
+            console.log('تم تحميل العروض من التخزين المحلي:', offers.length);
         }
+        
         displayOffers();
-        console.log('تم تحميل العروض:', offers.length);
     } catch (error) {
         console.error('خطأ في تحميل العروض:', error);
-        offers = [];
+        // في حالة الخطأ، استخدم localStorage
+        const localOffers = localStorage.getItem('backupOffers');
+        offers = localOffers ? JSON.parse(localOffers) : [];
         displayOffers();
-    }
-}
-
-function saveOffersToGlobalStorage() {
-    try {
-        // حفظ العروض في مكان عالمي يمكن للجميع الوصول إليه
-        localStorage.setItem(GLOBAL_OFFERS_KEY, JSON.stringify(offers));
-        console.log('تم حفظ العروض بنجاح:', offers.length);
-
-        // إرسال إشارة لجميع النوافذ المفتوحة لتحديث العروض
-        window.dispatchEvent(new StorageEvent('storage', {
-            key: GLOBAL_OFFERS_KEY,
-            newValue: JSON.stringify(offers)
-        }));
-    } catch (error) {
-        console.error('خطأ في حفظ العروض:', error);
     }
 }
 
@@ -84,25 +72,36 @@ async function saveOfferToGlobalStorage(offer) {
         offer.likedBy = [];
         offer.timestamp = new Date().toISOString();
 
-        // تحميل العروض الحالية
-        const existingOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
-        if (existingOffers) {
-            offers = JSON.parse(existingOffers);
-        } else {
-            offers = [];
+        // محاولة حفظ العرض على الخادم
+        const response = await fetch('/api/offers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(offer)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                offers = result.offers || [];
+                // حفظ نسخة احتياطية محلياً
+                localStorage.setItem('backupOffers', JSON.stringify(offers));
+                displayOffers();
+                console.log('تم حفظ العرض على الخادم بنجاح');
+                return offer;
+            }
         }
-
-        // إضافة العرض الجديد في المقدمة
+        
+        // في حالة فشل الخادم، احفظ محلياً فقط
+        const localOffers = localStorage.getItem('backupOffers');
+        offers = localOffers ? JSON.parse(localOffers) : [];
         offers.unshift(offer);
-
-        // حفظ العروض المحدثة
-        saveOffersToGlobalStorage();
-
-        // تحديث العرض فوراً
+        localStorage.setItem('backupOffers', JSON.stringify(offers));
         displayOffers();
-
-        console.log('تم إضافة عرض جديد:', offer);
+        console.log('تم حفظ العرض محلياً كاحتياطي');
         return offer;
+        
     } catch (error) {
         console.error('خطأ في حفظ العرض:', error);
         return null;
@@ -371,13 +370,7 @@ function setupEventListeners() {
         }
     });
 
-    // الاستماع لتغييرات العروض من المستخدمين الآخرين
-    window.addEventListener('storage', function(e) {
-        if (e.key === GLOBAL_OFFERS_KEY) {
-            console.log('تم اكتشاف تحديث في العروض من مستخدم آخر');
-            loadOffersFromGlobalStorage();
-        }
-    });
+    // لا حاجة للاستماع للتخزين المحلي بعد الآن
 }
 
 // Login functionality
@@ -426,17 +419,10 @@ function showMainPage() {
     // Check for new messages
     checkForNewMessages();
 
-    // تحديث العروض كل 3 ثوان للتأكد من عرض العروض الجديدة
+    // تحديث العروض كل 30 ثانية فقط (أقل إزعاجاً)
     setInterval(() => {
         loadOffersFromGlobalStorage();
-    }, 3000);
-
-    // Set up real-time listening for storage changes from other users
-    window.addEventListener('storage', function(e) {
-        if (e.key === GLOBAL_OFFERS_KEY) {
-            loadOffersFromGlobalStorage();
-        }
-    });
+    }, 30000);
 }
 
 // Side menu functionality
@@ -615,54 +601,49 @@ function createOfferCard(offer) {
 
 async function toggleLike(offerId) {
     try {
-        // Try to update on server first
-        const API_BASE = '';
-        try {
-            const response = await fetch(`${API_BASE}/api/offers/${offerId}/like`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId: currentUser.id })
-            });
+        // محاولة تحديث الإعجاب على الخادم
+        const response = await fetch(`/api/offers/${offerId}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    // Reload offers from server
-                    await loadOffersFromGlobalStorage();
-                    return;
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                // إعادة تحميل العروض من الخادم
+                await loadOffersFromGlobalStorage();
+                return;
+            }
+        }
+        
+        // في حالة فشل الخادم، قم بالتحديث محلياً
+        const localOffers = localStorage.getItem('backupOffers');
+        if (localOffers) {
+            offers = JSON.parse(localOffers);
+            
+            const offerIndex = offers.findIndex(o => o.id === offerId);
+            if (offerIndex !== -1) {
+                const offer = offers[offerIndex];
+                
+                if (!offer.likedBy) offer.likedBy = [];
+                if (!offer.likes) offer.likes = 0;
+                
+                const userIndex = offer.likedBy.indexOf(currentUser.id);
+                if (userIndex > -1) {
+                    offer.likedBy.splice(userIndex, 1);
+                    offer.likes = Math.max(0, offer.likes - 1);
+                } else {
+                    offer.likedBy.push(currentUser.id);
+                    offer.likes = (offer.likes || 0) + 1;
                 }
+                
+                offers[offerIndex] = offer;
+                localStorage.setItem('backupOffers', JSON.stringify(offers));
+                displayOffers();
             }
-        } catch (serverError) {
-            console.warn('Server not available, using global storage');
-        }
-        
-        // Fallback to globalStorage
-        const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
-        if (currentOffers) {
-            offers = JSON.parse(currentOffers);
-        }
-        
-        const offerIndex = offers.findIndex(o => o.id === offerId);
-        if (offerIndex !== -1) {
-            const offer = offers[offerIndex];
-            
-            if (!offer.likedBy) offer.likedBy = [];
-            if (!offer.likes) offer.likes = 0;
-            
-            const userIndex = offer.likedBy.indexOf(currentUser.id);
-            if (userIndex > -1) {
-                offer.likedBy.splice(userIndex, 1);
-                offer.likes = Math.max(0, offer.likes - 1);
-            } else {
-                offer.likedBy.push(currentUser.id);
-                offer.likes = (offer.likes || 0) + 1;
-            }
-            
-            offers[offerIndex] = offer;
-            saveOffersToGlobalStorage();
-            displayOffers();
         }
     } catch (error) {
         console.error('Error toggling like:', error);
@@ -672,37 +653,31 @@ async function toggleLike(offerId) {
 async function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
         try {
-            // Try to delete from server first
-            const API_BASE = '';
-            try {
-                const response = await fetch(`${API_BASE}/api/offers/${offerId}`, {
-                    method: 'DELETE'
-                });
+            // محاولة حذف العرض من الخادم
+            const response = await fetch(`/api/offers/${offerId}`, {
+                method: 'DELETE'
+            });
 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        offers = result.offers;
-                        displayOffers();
-                        showNotification('تم حذف العرض بنجاح 🗑️');
-                        return;
-                    }
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    offers = result.offers || [];
+                    localStorage.setItem('backupOffers', JSON.stringify(offers));
+                    displayOffers();
+                    showNotification('تم حذف العرض بنجاح 🗑️');
+                    return;
                 }
-            } catch (serverError) {
-                console.warn('Server not available, using global storage');
             }
             
-            // Fallback to globalStorage
-            const currentOffers = localStorage.getItem(GLOBAL_OFFERS_KEY);
-            if (currentOffers) {
-                offers = JSON.parse(currentOffers);
+            // في حالة فشل الخادم، احذف محلياً
+            const localOffers = localStorage.getItem('backupOffers');
+            if (localOffers) {
+                offers = JSON.parse(localOffers);
+                offers = offers.filter(offer => offer.id !== offerId);
+                localStorage.setItem('backupOffers', JSON.stringify(offers));
+                displayOffers();
+                showNotification('تم حذف العرض محلياً 🗑️');
             }
-            
-            offers = offers.filter(offer => offer.id !== offerId);
-            saveOffersToGlobalStorage();
-            displayOffers();
-            
-            showNotification('تم حذف العرض بنجاح 🗑️');
         } catch (error) {
             console.error('Error deleting offer:', error);
             alert('حدث خطأ في حذف العرض');

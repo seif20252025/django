@@ -2,6 +2,8 @@
 // Payment Backend Service
 const express = require('express');
 const app = express();
+const express = require('express');
+const app = express();
 const port = 3000;
 
 app.use(express.json());
@@ -100,6 +102,7 @@ app.delete('/api/offers/:offerId', (req, res) => {
     try {
         const offerId = parseFloat(req.params.offerId);
         globalOffers = globalOffers.filter(offer => offer.id !== offerId);
+        console.log(`Offer ${offerId} deleted. Total offers: ${globalOffers.length}`);
         res.json({ success: true, offers: globalOffers });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Failed to delete offer' });
@@ -133,7 +136,15 @@ app.post('/api/offers/:offerId/like', (req, res) => {
             res.status(404).json({ success: false, error: 'Offer not found' });
         }
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Failed to like offer' });
+        res.status(500).json({ success: false, error: 'Failed to toggle like' });
+    }
+});
+
+// Start server
+app.listen(port, '0.0.0.0', () => {
+    console.log(`🎮 GAMES SHOP Server running on http://0.0.0.0:${port}`);
+    console.log('📦 Global offers storage initialized');
+});s: false, error: 'Failed to like offer' });
     }
 });
 
