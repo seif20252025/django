@@ -284,7 +284,7 @@ function showLoginPage() {
     document.getElementById('mainPage').classList.remove('active');
 }
 
-function showMainPage() {
+async function showMainPage() {
     document.getElementById('loginPage').classList.remove('active');
     document.getElementById('mainPage').classList.add('active');
 
@@ -297,13 +297,10 @@ function showMainPage() {
     registerMember();
 
     // Load all data from storage
-    loadOffersFromGlobalStorage();
+    await loadOffersFromGlobalStorage();
     loadConversationsFromStorage();
     loadUserSettingsFromStorage();
     loadMembersFromStorage();
-
-    // Display offers
-    displayOffers();
 
     // Check for new messages
     checkForNewMessages();
