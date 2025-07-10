@@ -404,7 +404,7 @@ function loadMessagesList() {
     container.innerHTML = '';
     
     if (userChats.length === 0) {
-        container.innerHTML = '<p>لا توجد محادثات حالياً</p>';
+        container.innerHTML = '<div class="no-conversations"><i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>لا توجد محادثات حالياً</p><p style="opacity: 0.7; font-size: 0.9rem;">ابدأ محادثة من خلال الضغط على "مراسلة الشخص" في أي عرض</p></div>';
         return;
     }
     
@@ -416,13 +416,27 @@ function loadMessagesList() {
         const otherUserId = chatId.split('-').find(id => id !== currentUser.id.toString());
         const offer = offers.find(o => o.userId == otherUserId);
         const otherUserName = offer ? offer.userName : 'مستخدم غير معروف';
+        const otherUserAvatar = offer ? offer.userAvatar : 1;
         
         const messageItem = document.createElement('div');
-        messageItem.className = 'message-item';
+        messageItem.className = 'conversation-item';
         messageItem.innerHTML = `
-            <div style="font-weight: bold; color: #00bfff;">${otherUserName}</div>
-            <div style="margin-top: 0.5rem;">${lastMessage.text}</div>
-            <small style="opacity: 0.7;">${new Date(lastMessage.timestamp).toLocaleString('ar-EG')}</small>
+            <div class="conversation-header">
+                <img src="https://i.pravatar.cc/150?img=${otherUserAvatar}" alt="${otherUserName}" class="conversation-avatar">
+                <div class="conversation-info">
+                    <div class="conversation-name">${otherUserName}</div>
+                    <div class="conversation-last-message">${lastMessage.text.length > 50 ? lastMessage.text.substring(0, 50) + '...' : lastMessage.text}</div>
+                    <small class="conversation-time">${new Date(lastMessage.timestamp).toLocaleString('ar-EG', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit'
+                    })}</small>
+                </div>
+                <div class="conversation-indicator">
+                    <i class="fas fa-chevron-left"></i>
+                </div>
+            </div>
         `;
         messageItem.addEventListener('click', () => {
             closeModal('messagesModal');
@@ -584,42 +598,4 @@ function showNotification(message) {
     }, 3000);
 }
 
-// Initialize random offers for demo
-function initializeDemoOffers() {
-    if (offers.length === 0) {
-        const demoOffers = [
-            {
-                id: 1,
-                userId: 999,
-                userName: "أحمد الجيمر",
-                userAvatar: 1,
-                game: "ROBLOX◻️",
-                offer: "حساب رابلوكس مميز مع ملايين الروبوكس ومعدات نادرة",
-                requirement: "50 دولار",
-                likes: 15,
-                likedBy: [],
-                timestamp: new Date().toISOString()
-            },
-            {
-                id: 2,
-                userId: 998,
-                userName: "سارة برو",
-                userAvatar: 2,
-                game: "FREE FIRE🔥",
-                offer: "حساب فري فاير مكسيم مع جميع الشخصيات والأسلحة",
-                requirement: "حساب ببجي مماثل",
-                likes: 12,
-                likedBy: [],
-                timestamp: new Date().toISOString()
-            }
-        ];
-        
-        offers = demoOffers;
-        saveOffers();
-    }
-}
-
-// Call demo initialization when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(initializeDemoOffers, 1000);
-});
+// No demo offers - only real user offers
