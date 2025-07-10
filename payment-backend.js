@@ -3,7 +3,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // Enable CORS for all origins
 app.use(cors());
@@ -194,4 +194,5 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`🎮 GAMES SHOP Server running on http://0.0.0.0:${port}`);
     console.log('📦 Global offers storage initialized');
     console.log('🌐 All users will see offers in real-time');
+    console.log('✅ Server is ready and accessible to users');
 });

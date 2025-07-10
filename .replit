@@ -30,9 +30,5 @@ task = "shell.exec"
 args = "static-web-server -w ./.config/static-web-server.toml"
 
 [[ports]]
-localPort = 3000
-externalPort = 80
-
-[[ports]]
-localPort = 80
+localPort = 5000
 externalPort = 80
