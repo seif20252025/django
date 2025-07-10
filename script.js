@@ -41,6 +41,9 @@ function initializeApp() {
     setupEventListeners();
 }
 
+// الثابت الوحيد لحفظ العروض المشتركة
+const SHARED_OFFERS_KEY = 'SHARED_GAMES_SHOP_OFFERS_GLOBAL';
+
 // Storage functions for shared functionality using server
 async function loadOffersFromStorage() {
     try {
@@ -58,24 +61,29 @@ async function loadOffersFromStorage() {
     
     // Fallback to localStorage for offline mode
     try {
-        const savedOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
+        const savedOffers = localStorage.getItem(SHARED_OFFERS_KEY);
         if (savedOffers) {
             offers = JSON.parse(savedOffers);
+            displayOffers();
+        } else {
+            offers = [];
             displayOffers();
         }
     } catch (error) {
         console.error('Error loading offers from storage:', error);
+        offers = [];
+        displayOffers();
     }
 }
 
 function saveOffersToStorage() {
     try {
         // Save to global shared storage that all users can see across all sessions
-        localStorage.setItem('GLOBAL_GAMES_SHOP_OFFERS', JSON.stringify(offers));
+        localStorage.setItem(SHARED_OFFERS_KEY, JSON.stringify(offers));
         
         // Also trigger a storage event for real-time updates
         window.dispatchEvent(new StorageEvent('storage', {
-            key: 'GLOBAL_GAMES_SHOP_OFFERS',
+            key: SHARED_OFFERS_KEY,
             newValue: JSON.stringify(offers)
         }));
     } catch (error) {
@@ -111,10 +119,12 @@ async function saveOfferToStorage(offer) {
             console.warn('Server not available, using local storage');
         }
         
-        // Fallback to localStorage
-        const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
+        // Fallback to localStorage - استخدام نفس المفتاح
+        const existingOffers = localStorage.getItem(SHARED_OFFERS_KEY);
         if (existingOffers) {
             offers = JSON.parse(existingOffers);
+        } else {
+            offers = [];
         }
         
         offers.unshift(offer);
@@ -462,7 +472,7 @@ function showMainPage() {
     
     // Set up real-time listening for storage changes from other users
     window.addEventListener('storage', function(e) {
-        if (e.key === 'GLOBAL_GAMES_SHOP_OFFERS') {
+        if (e.key === SHARED_OFFERS_KEY) {
             loadOffersFromStorage();
         }
     });
@@ -662,7 +672,7 @@ async function toggleLike(offerId) {
         }
         
         // Fallback to localStorage
-        const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
+        const existingOffers = localStorage.getItem(SHARED_OFFERS_KEY);
         if (existingOffers) {
             offers = JSON.parse(existingOffers);
         }
@@ -715,7 +725,7 @@ async function deleteOffer(offerId) {
             }
             
             // Fallback to localStorage
-            const existingOffers = localStorage.getItem('GLOBAL_GAMES_SHOP_OFFERS');
+            const existingOffers = localStorage.getItem(SHARED_OFFERS_KEY);
             if (existingOffers) {
                 offers = JSON.parse(existingOffers);
             }
@@ -1219,15 +1229,18 @@ function initializeAds() {
                 const mainAd = document.querySelector('.main-ad');
                 if (mainAd && !mainAd.getAttribute('data-adsbygoogle-status')) {
                     try {
-                        (window.adsbygoogle = window.adsbygoogle || []).push({});
-                        adInitialized = true;
+                        // Check if element has proper dimensions before initializing
+                        if (mainAd.offsetWidth > 0) {
+                            (window.adsbygoogle = window.adsbygoogle || []).push({});
+                            adInitialized = true;
+                        }
                     } catch (adError) {
                         console.warn('Main ad initialization failed:', adError);
                     }
                 }
             }
 
-            // Show periodic ads every 5 minutes (only if not already running)
+            // Show periodic ads every 10 minutes (reduced frequency)
             if (!periodicAdInterval) {
                 periodicAdInterval = setInterval(() => {
                     try {
@@ -1235,7 +1248,7 @@ function initializeAds() {
                     } catch (adError) {
                         console.warn('Periodic ad failed:', adError);
                     }
-                }, 300000); // 5 minutes
+                }, 600000); // 10 minutes instead of 5
             }
 
             // Clear interval on page unload
@@ -1247,7 +1260,7 @@ function initializeAds() {
             });
         } else {
             // Retry initialization if AdSense not loaded yet
-            setTimeout(initializeAds, 1000);
+            setTimeout(initializeAds, 2000); // Increased delay
         }
     } catch (error) {
         console.warn('AdSense initialization error:', error);
