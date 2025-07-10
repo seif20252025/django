@@ -1003,8 +1003,7 @@ function showNotification(message) {
         right: 20px;
         background: linear-gradient(45deg, #00ff80, #00cc66);
         color: white;
-        padding: 1rem```python
- 2rem;
+        padding: 1rem 2rem;
         border-radius: 10px;
         box-shadow: 0 10px 25px rgba(0, 255, 128, 0.4);
         z-index: 3000;
