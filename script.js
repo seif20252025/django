@@ -13,6 +13,7 @@ let userSettings = {
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+    initializeAds();
 });
 
 function initializeApp() {
@@ -713,13 +714,85 @@ function showMarketModal() {
 
 // VIP purchase
 function buyVIP() {
-    if (confirm('هل تريد شراء VIP مقابل 30 LE؟')) {
-        showPaymentProcess();
+    // التحقق من الرصيد أولاً
+    checkUserBalance().then(hasEnoughBalance => {
+        if (!hasEnoughBalance) {
+            showInsufficientBalanceModal();
+            return;
+        }
+        
+        if (confirm('هل تريد شراء VIP مقابل 30 LE؟')) {
+            showPaymentProcess();
+        }
+    });
+}
+
+// Check if user has enough balance
+async function checkUserBalance() {
+    try {
+        const userBalance = await getUserBalance();
+        return userBalance >= 30; // VIP price
+    } catch (error) {
+        console.error('Error checking balance:', error);
+        return false;
     }
 }
 
+// Get user balance (simulate checking from payment provider)
+async function getUserBalance() {
+    // This would connect to actual payment provider API
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            // Simulate random balance between 0-100
+            const balance = Math.floor(Math.random() * 100);
+            resolve(balance);
+        }, 1000);
+    });
+}
+
+function showInsufficientBalanceModal() {
+    const balanceModal = document.createElement('div');
+    balanceModal.className = 'modal active';
+    balanceModal.id = 'balanceModal';
+    
+    balanceModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>رصيد غير كافي 💰</h3>
+                <button class="close-modal" onclick="closeBalanceModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="balance-warning">
+                    <i class="fas fa-wallet" style="font-size: 3rem; color: #ff4757; margin-bottom: 1rem;"></i>
+                    <h4>عذراً، رصيدك غير كافي لإتمام هذه العملية</h4>
+                    <p>سعر VIP: 30 LE</p>
+                    <p>يرجى إضافة رصيد إلى محفظتك أولاً</p>
+                    <button class="submit-btn" onclick="showAddBalanceModal()">إضافة رصيد</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(balanceModal);
+}
+
+function closeBalanceModal() {
+    const modal = document.getElementById('balanceModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showAddBalanceModal() {
+    closeBalanceModal();
+    showPaymentProcess(true); // true indicates this is for adding balance
+}
+
 // Payment processing
-function showPaymentProcess() {
+function showPaymentProcess(isAddingBalance = false) {
+    const amount = isAddingBalance ? '50' : '30';
+    const purpose = isAddingBalance ? 'إضافة رصيد' : 'شراء VIP';
+    
     const paymentModal = document.createElement('div');
     paymentModal.className = 'modal active';
     paymentModal.id = 'paymentModal';
@@ -727,7 +800,7 @@ function showPaymentProcess() {
     paymentModal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
-                <h3>معالجة الدفع 💳</h3>
+                <h3>${purpose} 💳</h3>
                 <button class="close-modal" onclick="closePaymentModal()">×</button>
             </div>
             <div class="modal-body">
@@ -735,7 +808,7 @@ function showPaymentProcess() {
                     <h4>تفاصيل الدفع</h4>
                     <div class="form-group">
                         <label>المبلغ</label>
-                        <input type="text" value="30 LE" readonly class="form-control">
+                        <input type="text" value="${amount} LE" readonly class="form-control">
                     </div>
                     <div class="form-group">
                         <label>رقم الهاتف للدفع</label>
@@ -744,18 +817,69 @@ function showPaymentProcess() {
                     <div class="form-group">
                         <label>طريقة الدفع</label>
                         <select id="paymentMethod" class="form-control">
-                            <option value="mobile">محفظة موبايل</option>
-                            <option value="card">كارت ائتمان</option>
-                            <option value="fawry">فوري</option>
+                            <option value="">اختر طريقة الدفع</option>
+                            <optgroup label="محافظ إلكترونية">
+                                <option value="vodafone_cash">فودافون كاش 📱</option>
+                                <option value="orange_money">أورانج موني 🧡</option>
+                                <option value="etisalat_cash">اتصالات كاش 💚</option>
+                                <option value="we_pay">WE Pay 💙</option>
+                            </optgroup>
+                            <optgroup label="بنوك مصرية">
+                                <option value="cib_wallet">CIB Wallet 🏦</option>
+                                <option value="nbe_wallet">البنك الأهلي 🇪🇬</option>
+                                <option value="banque_misr">بنك مصر 🏛️</option>
+                            </optgroup>
+                            <optgroup label="طرق دفع أخرى">
+                                <option value="fawry">فوري 💰</option>
+                                <option value="aman">أمان 🔒</option>
+                                <option value="masary">مصاري 💳</option>
+                                <option value="card">كارت ائتمان/خصم 💳</option>
+                            </optgroup>
                         </select>
                     </div>
-                    <button class="submit-btn" onclick="processPayment()">تأكيد الدفع</button>
+                    <div class="payment-instructions" id="paymentInstructions" style="display: none;">
+                        <div class="instruction-content">
+                            <h5>تعليمات الدفع:</h5>
+                            <p id="instructionText"></p>
+                        </div>
+                    </div>
+                    <button class="submit-btn" onclick="processPayment(${isAddingBalance})">تأكيد الدفع</button>
                 </div>
             </div>
         </div>
     `;
     
     document.body.appendChild(paymentModal);
+    
+    // Add event listener for payment method change
+    document.getElementById('paymentMethod').addEventListener('change', showPaymentInstructions);
+}
+
+function showPaymentInstructions() {
+    const method = document.getElementById('paymentMethod').value;
+    const instructionsDiv = document.getElementById('paymentInstructions');
+    const instructionText = document.getElementById('instructionText');
+    
+    const instructions = {
+        'vodafone_cash': 'اطلب *9*رقم_التاجر*المبلغ# من هاتفك فودافون أو استخدم تطبيق Ana Vodafone',
+        'orange_money': 'ادخل على تطبيق Orange Money واختر الدفع للتاجر',
+        'etisalat_cash': 'استخدم تطبيق Etisalat Cash أو اطلب كود الدفع',
+        'we_pay': 'ادخل على تطبيق WE واختر الدفع الإلكتروني',
+        'cib_wallet': 'استخدم تطبيق CIB Mobile أو CIB Wallet',
+        'nbe_wallet': 'ادخل على تطبيق الأهلي موبايل أو الأهلي نت',
+        'banque_misr': 'استخدم تطبيق BM Mobile أو BM Online',
+        'fawry': 'توجه لأقرب نقطة فوري واعط الكود المرسل',
+        'aman': 'استخدم كود أمان من أقرب نقطة خدمة',
+        'masary': 'ادخل على تطبيق مصاري أو الموقع الإلكتروني',
+        'card': 'ستتم إعادة توجيهك لصفحة الدفع الآمنة'
+    };
+    
+    if (method && instructions[method]) {
+        instructionText.textContent = instructions[method];
+        instructionsDiv.style.display = 'block';
+    } else {
+        instructionsDiv.style.display = 'none';
+    }
 }
 
 function closePaymentModal() {
@@ -765,12 +889,17 @@ function closePaymentModal() {
     }
 }
 
-async function processPayment() {
+async function processPayment(isAddingBalance = false) {
     const phone = document.getElementById('paymentPhone').value;
     const method = document.getElementById('paymentMethod').value;
     
     if (!phone) {
         showNotification('من فضلك أدخل رقم الهاتف');
+        return;
+    }
+    
+    if (!method) {
+        showNotification('من فضلك اختر طريقة الدفع');
         return;
     }
     
@@ -782,23 +911,28 @@ async function processPayment() {
         
         // Create payment request
         const paymentData = {
-            amount: 30,
+            amount: isAddingBalance ? 50 : 30,
             currency: 'EGP',
             customerPhone: phone,
             paymentMethod: method,
             userId: userInfo.id,
             userName: userInfo.name,
-            product: 'VIP Package'
+            product: isAddingBalance ? 'Add Balance' : 'VIP Package'
         };
         
         // Process payment
         const result = await processRealPayment(paymentData);
         
         if (result.success) {
-            // Activate VIP for user
-            activateVIP(userInfo.id);
+            if (isAddingBalance) {
+                // Add balance to user account
+                showNotification('تم إضافة الرصيد بنجاح! 💰');
+            } else {
+                // Activate VIP for user
+                activateVIP(userInfo.id);
+                showNotification('تم الدفع بنجاح! تم تفعيل VIP 👑');
+            }
             closePaymentModal();
-            showNotification('تم الدفع بنجاح! تم تفعيل VIP 👑');
         } else {
             showNotification('فشل في الدفع. حاول مرة أخرى');
         }
@@ -949,6 +1083,86 @@ function showNotification(message) {
             }
         }, 300);
     }, 3000);
+}
+
+// AdSense Functions
+function initializeAds() {
+    // Initialize AdSense on page load
+    setTimeout(() => {
+        try {
+            (adsbygoogle = window.adsbygoogle || []).push({});
+            console.log('AdSense initialized');
+        } catch (error) {
+            console.error('AdSense initialization error:', error);
+        }
+    }, 2000);
+    
+    // Show periodic ads every 5 minutes
+    setInterval(showPeriodicAd, 5 * 60 * 1000); // 5 minutes in milliseconds
+}
+
+function showPeriodicAd() {
+    const adModal = document.createElement('div');
+    adModal.className = 'modal active';
+    adModal.id = 'periodicAdModal';
+    
+    adModal.innerHTML = `
+        <div class="modal-content ad-modal">
+            <div class="modal-header">
+                <h3>إعلان 📢</h3>
+                <button class="close-modal" onclick="closePeriodicAd()" id="closeAdBtn" disabled>×</button>
+                <span class="ad-timer" id="adTimer">5</span>
+            </div>
+            <div class="modal-body">
+                <div class="ad-container">
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-1404937854433871"
+                         data-ad-slot="3016283172"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                </div>
+                <p class="ad-message">يمكنك إغلاق الإعلان بعد <span id="countdown">5</span> ثوانٍ</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(adModal);
+    
+    try {
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (error) {
+        console.error('AdSense periodic ad error:', error);
+    }
+    
+    // Countdown timer for ad
+    let countdown = 5;
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        const countdownElement = document.getElementById('countdown');
+        const timerElement = document.getElementById('adTimer');
+        
+        if (countdownElement) countdownElement.textContent = countdown;
+        if (timerElement) timerElement.textContent = countdown;
+        
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            const closeBtn = document.getElementById('closeAdBtn');
+            if (closeBtn) {
+                closeBtn.disabled = false;
+                closeBtn.style.color = '#00bfff';
+                closeBtn.style.cursor = 'pointer';
+            }
+            if (timerElement) timerElement.style.display = 'none';
+        }
+    }, 1000);
+}
+
+function closePeriodicAd() {
+    const modal = document.getElementById('periodicAdModal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 // No demo offers - only real user offers will be displayed

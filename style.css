@@ -99,6 +99,22 @@ body {
     background: linear-gradient(45deg, #0099cc, #000428);
 }
 
+/* AdSense Container */
+.adsense-container {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    margin: 1rem auto;
+    max-width: 1200px;
+    border-radius: 10px;
+    border: 1px solid #00bfff;
+    text-align: center;
+}
+
+.adsense-container .adsbygoogle {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
 /* Header */
 .header {
     background: linear-gradient(135deg, #000428 0%, #004e92 100%);
@@ -1025,6 +1041,84 @@ textarea.form-control {
 .payment-form .submit-btn:hover {
     transform: translateY(-3px);
     box-shadow: 0 15px 35px rgba(255, 215, 0, 0.6);
+}
+
+/* Balance Modal Styles */
+.balance-warning {
+    text-align: center;
+    padding: 2rem;
+}
+
+.balance-warning h4 {
+    color: #ff4757;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.balance-warning p {
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+/* Payment Instructions */
+.payment-instructions {
+    background: rgba(0, 191, 255, 0.1);
+    border: 1px solid #00bfff;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.instruction-content h5 {
+    color: #00bfff;
+    margin-bottom: 0.5rem;
+}
+
+.instruction-content p {
+    color: #ffffff;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Periodic Ad Modal */
+.ad-modal .modal-content {
+    max-width: 600px;
+    width: 90%;
+}
+
+.ad-container {
+    min-height: 250px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ad-message {
+    text-align: center;
+    color: #00bfff;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.ad-timer {
+    background: #ff4757;
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+}
+
+.close-modal:disabled {
+    color: #666 !important;
+    cursor: not-allowed !important;
 }
 
 /* Scrollbar Styling */
