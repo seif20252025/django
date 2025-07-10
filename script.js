@@ -1046,44 +1046,45 @@ let periodicAdInterval = null;
 
 function initializeAds() {
     try {
-        // Check if adsbygoogle is loaded
+        // Wait for AdSense script to load
         if (typeof window.adsbygoogle !== 'undefined') {
-            // Clear any existing ads first
-            const existingAds = document.querySelectorAll('.adsbygoogle');
-            existingAds.forEach(ad => {
-                if (ad.getAttribute('data-adsbygoogle-status')) {
-                    ad.removeAttribute('data-adsbygoogle-status');
-                }
-            });
-
-            // Initialize main ad on page load
-            const mainAd = document.querySelector('.adsbygoogle');
-            if (mainAd && !mainAd.getAttribute('data-adsbygoogle-status')) {
-                try {
-                    (window.adsbygoogle = window.adsbygoogle || []).push({});
-                } catch (adError) {
-                    console.warn('Main ad initialization failed:', adError);
+            // Initialize main ad only once
+            if (!adInitialized) {
+                const mainAd = document.querySelector('.main-ad');
+                if (mainAd && !mainAd.getAttribute('data-adsbygoogle-status')) {
+                    try {
+                        (window.adsbygoogle = window.adsbygoogle || []).push({});
+                        adInitialized = true;
+                    } catch (adError) {
+                        console.warn('Main ad initialization failed:', adError);
+                    }
                 }
             }
 
-            // Show periodic ads every 5 minutes
-            let adInterval = setInterval(() => {
-                try {
-                    showPeriodicAd();
-                } catch (adError) {
-                    console.warn('Periodic ad failed:', adError);
-                }
-            }, 300000); // 5 minutes
+            // Show periodic ads every 5 minutes (only if not already running)
+            if (!periodicAdInterval) {
+                periodicAdInterval = setInterval(() => {
+                    try {
+                        showPeriodicAd();
+                    } catch (adError) {
+                        console.warn('Periodic ad failed:', adError);
+                    }
+                }, 300000); // 5 minutes
+            }
 
             // Clear interval on page unload
             window.addEventListener('beforeunload', () => {
-                if (adInterval) {
-                    clearInterval(adInterval);
+                if (periodicAdInterval) {
+                    clearInterval(periodicAdInterval);
+                    periodicAdInterval = null;
                 }
             });
+        } else {
+            // Retry initialization if AdSense not loaded yet
+            setTimeout(initializeAds, 1000);
         }
     } catch (error) {
-        console.error('AdSense initialization error:', error);
+        console.warn('AdSense initialization error:', error);
     }
 }
 
@@ -1102,46 +1103,51 @@ function showPeriodicAd() {
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 3000;
             display: flex;
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(5px);
         `;
 
         const adContainer = document.createElement('div');
         adContainer.style.cssText = `
-            background: white;
+            background: linear-gradient(135deg, #000428 0%, #004e92 100%);
             padding: 2rem;
-            border-radius: 10px;
-            max-width: 500px;
+            border-radius: 15px;
+            max-width: 90%;
+            width: 500px;
             text-align: center;
             position: relative;
+            border: 2px solid #00bfff;
+            box-shadow: 0 20px 40px rgba(0, 191, 255, 0.3);
+            color: white;
         `;
 
-        // Show fallback ad instead of trying AdSense again
+        // Show promotional content
         adContainer.innerHTML = `
             <div style="margin-bottom: 1rem;">
-                <span id="adTimer" style="background: #ff4444; color: white; padding: 0.5rem; border-radius: 5px; font-weight: bold;">5</span>
+                <span id="adTimer" style="background: #ff4444; color: white; padding: 0.5rem 1rem; border-radius: 50px; font-weight: bold; font-size: 1.1rem;">5</span>
             </div>
-            <div style="background: linear-gradient(45deg, #00bfff, #004e92); padding: 2rem; border-radius: 10px; text-align: center; color: white;">
-                <h3>🎮 GAMES SHOP 🎮</h3>
-                <p>أفضل موقع لبيع وشراء عروض الألعاب</p>
-                <p>انضم إلى مجتمعنا الآن!</p>
-                <p>احصل على VIP واستمتع بالمميزات الحصرية!</p>
+            <div style="background: linear-gradient(45deg, #00bfff, #004e92); padding: 2.5rem; border-radius: 15px; margin-bottom: 1rem;">
+                <h2 style="margin: 0 0 1rem 0; color: white; font-size: 2rem;">🎮 GAMES SHOP 🎮</h2>
+                <p style="margin: 0.5rem 0; font-size: 1.1rem;">أفضل موقع لبيع وشراء عروض الألعاب</p>
+                <p style="margin: 0.5rem 0; font-size: 1.1rem;">انضم إلى مجتمعنا الآن!</p>
+                <p style="margin: 0.5rem 0; font-size: 1.1rem; color: #ffd700;">احصل على VIP واستمتع بالمميزات الحصرية! 👑</p>
             </div>
             <button id="closeAdBtn" style="
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: #ccc;
+                background: #666;
                 border: none;
-                padding: 0.5rem;
-                border-radius: 5px;
+                padding: 0.8rem 1.5rem;
+                border-radius: 10px;
                 cursor: not-allowed;
-                color: #666;
-            " disabled>إغلاق</button>
+                color: #ccc;
+                font-size: 1rem;
+                font-weight: bold;
+                transition: all 0.3s ease;
+            " disabled>إغلاق (5)</button>
         `;
 
         adOverlay.appendChild(adContainer);
@@ -1150,7 +1156,12 @@ function showPeriodicAd() {
         // Close ad function
         const closeAd = () => {
             if (adOverlay && adOverlay.parentNode) {
-                adOverlay.parentNode.removeChild(adOverlay);
+                adOverlay.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    if (adOverlay.parentNode) {
+                        adOverlay.parentNode.removeChild(adOverlay);
+                    }
+                }, 300);
             }
         };
 
@@ -1159,25 +1170,40 @@ function showPeriodicAd() {
         const countdownInterval = setInterval(() => {
             countdown--;
             const timerElement = document.getElementById('adTimer');
+            const closeBtn = document.getElementById('closeAdBtn');
 
             if (timerElement) timerElement.textContent = countdown;
+            if (closeBtn) closeBtn.textContent = `إغلاق (${countdown})`;
 
             if (countdown <= 0) {
                 clearInterval(countdownInterval);
-                const closeBtn = document.getElementById('closeAdBtn');
                 if (closeBtn) {
                     closeBtn.disabled = false;
-                    closeBtn.style.background = '#00bfff';
+                    closeBtn.style.background = 'linear-gradient(45deg, #00bfff, #004e92)';
                     closeBtn.style.color = 'white';
                     closeBtn.style.cursor = 'pointer';
+                    closeBtn.textContent = 'إغلاق ✕';
                     closeBtn.addEventListener('click', closeAd);
                 }
                 if (timerElement) timerElement.style.display = 'none';
             }
         }, 1000);
 
+        // Add CSS animation
+        if (!document.getElementById('adAnimationStyles')) {
+            const style = document.createElement('style');
+            style.id = 'adAnimationStyles';
+            style.textContent = `
+                @keyframes fadeOut {
+                    from { opacity: 1; transform: scale(1); }
+                    to { opacity: 0; transform: scale(0.9); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
     } catch (error) {
-        console.error('Periodic ad error:', error);
+        console.warn('Periodic ad error:', error);
     }
 }
 
