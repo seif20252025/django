@@ -5,13 +5,16 @@ let offers = [];
 let conversations = {};
 let currentChatPartner = null;
 let selectedAvatar = 1;
-let userVexBalance = 0; // Starting balance
+let userVexBalance = 0;
 let userSettings = {
     allowMessages: true,
     blockedUsers: []
 };
 let registeredMembers = [];
 let hasNewMessages = false;
+
+// Server API base URL
+const API_BASE = '';
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -29,15 +32,208 @@ function initializeApp() {
         showLoginPage();
     }
     
-    // Load saved data
-    loadOffers();
-    loadConversations();
-    loadUserSettings();
-    loadVexBalance();
-    loadMembers();
+    // Load data from server
+    loadOffersFromServer();
+    loadConversationsFromServer();
+    loadUserSettingsFromServer();
+    loadMembersFromServer();
     
     // Event listeners
     setupEventListeners();
+}
+
+// Server API functions
+async function loadOffersFromServer() {
+    try {
+        const response = await fetch(`${API_BASE}/api/offers`);
+        if (response.ok) {
+            offers = await response.json();
+            displayOffers();
+        }
+    } catch (error) {
+        console.error('Error loading offers:', error);
+    }
+}
+
+async function saveOfferToServer(offer) {
+    try {
+        const response = await fetch(`${API_BASE}/api/offers`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(offer)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            return result.offer;
+        }
+    } catch (error) {
+        console.error('Error saving offer:', error);
+    }
+    return null;
+}
+
+async function deleteOfferFromServer(offerId) {
+    try {
+        const response = await fetch(`${API_BASE}/api/offers/${offerId}`, {
+            method: 'DELETE'
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Error deleting offer:', error);
+        return false;
+    }
+}
+
+async function likeOfferOnServer(offerId) {
+    try {
+        const response = await fetch(`${API_BASE}/api/offers/${offerId}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            return result.offer;
+        }
+    } catch (error) {
+        console.error('Error liking offer:', error);
+    }
+    return null;
+}
+
+async function loadConversationsFromServer() {
+    if (!currentUser) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/conversations/${currentUser.id}`);
+        if (response.ok) {
+            conversations = await response.json();
+        }
+    } catch (error) {
+        console.error('Error loading conversations:', error);
+    }
+}
+
+async function saveMessageToServer(chatId, message) {
+    try {
+        const response = await fetch(`${API_BASE}/api/conversations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ chatId, message })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            return result.message;
+        }
+    } catch (error) {
+        console.error('Error saving message:', error);
+    }
+    return null;
+}
+
+async function loadMembersFromServer() {
+    try {
+        const response = await fetch(`${API_BASE}/api/members`);
+        if (response.ok) {
+            registeredMembers = await response.json();
+        }
+    } catch (error) {
+        console.error('Error loading members:', error);
+    }
+}
+
+async function saveMemberToServer(member) {
+    try {
+        const response = await fetch(`${API_BASE}/api/members`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(member)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            registeredMembers = result.members;
+            return true;
+        }
+    } catch (error) {
+        console.error('Error saving member:', error);
+    }
+    return false;
+}
+
+async function loadUserSettingsFromServer() {
+    if (!currentUser) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/settings/${currentUser.id}`);
+        if (response.ok) {
+            userSettings = await response.json();
+        }
+    } catch (error) {
+        console.error('Error loading user settings:', error);
+    }
+}
+
+async function saveUserSettingsToServer() {
+    if (!currentUser) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/settings/${currentUser.id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userSettings)
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Error saving user settings:', error);
+        return false;
+    }
+}
+
+async function checkVIPStatus() {
+    if (!currentUser) return false;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/vip/${currentUser.id}`);
+        if (response.ok) {
+            const result = await response.json();
+            return result.isVIP;
+        }
+    } catch (error) {
+        console.error('Error checking VIP status:', error);
+    }
+    return false;
+}
+
+async function activateVIPOnServer() {
+    if (!currentUser) return false;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/vip`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Error activating VIP:', error);
+        return false;
+    }
 }
 
 function setupEventListeners() {
@@ -139,7 +335,7 @@ function setupEventListeners() {
 }
 
 // Login functionality
-function handleLogin() {
+async function handleLogin() {
     const username = document.getElementById('usernameInput').value.trim();
     if (username.length > 0) {
         currentUser = {
@@ -148,7 +344,8 @@ function handleLogin() {
             id: Date.now()
         };
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-        showMainPage();
+        userVexBalance = 0; // Reset Vex balance to 0 as requested
+        await showMainPage();
     } else {
         alert('من فضلك ادخل اسمك');
     }
@@ -159,7 +356,7 @@ function showLoginPage() {
     document.getElementById('mainPage').classList.remove('active');
 }
 
-function showMainPage() {
+async function showMainPage() {
     document.getElementById('loginPage').classList.remove('active');
     document.getElementById('mainPage').classList.add('active');
     
@@ -168,8 +365,14 @@ function showMainPage() {
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
     updateVexDisplay();
     
-    // Register member
-    registerMember();
+    // Register member on server
+    await registerMember();
+    
+    // Load all data from server
+    await loadOffersFromServer();
+    await loadConversationsFromServer();
+    await loadUserSettingsFromServer();
+    await loadMembersFromServer();
     
     // Display offers
     displayOffers();
@@ -232,7 +435,7 @@ function selectCurrency(currency) {
     document.getElementById('currencyOptions').classList.add('hidden');
 }
 
-function submitOffer() {
+async function submitOffer() {
     const game = document.getElementById('gameSelect').value;
     const offerText = document.getElementById('offerText').value.trim();
     const priceAmount = document.getElementById('priceAmount').value;
@@ -255,27 +458,27 @@ function submitOffer() {
     }
     
     // Show security warning before submitting
-    showSecurityWarning(() => {
+    showSecurityWarning(async () => {
+        const isVIP = await checkVIPStatus();
+        
         const newOffer = {
-            id: Date.now(),
             userId: currentUser.id,
             userName: currentUser.name,
             userAvatar: currentUser.avatar,
             game: game,
             offer: offerText,
             requirement: requirement,
-            likes: 0,
-            likedBy: [],
-            timestamp: new Date().toISOString()
+            isVIP: isVIP
         };
         
-        offers.unshift(newOffer);
-        saveOffers();
-        displayOffers();
-        closeAddOfferModal();
-        
-        // Show success message
-        showNotification('تم إضافة العرض بنجاح! 🎉');
+        const savedOffer = await saveOfferToServer(newOffer);
+        if (savedOffer) {
+            await loadOffersFromServer(); // Reload all offers
+            closeAddOfferModal();
+            showNotification('تم إضافة العرض بنجاح! 🎉');
+        } else {
+            alert('حدث خطأ في إضافة العرض');
+        }
     });
 }
 
@@ -302,18 +505,17 @@ function displayOffers(filteredOffers = null) {
 
 function createOfferCard(offer) {
     const card = document.createElement('div');
-    const isVIP = offer.isVIP || isVIPUser(offer.userId);
-    card.className = `offer-card ${isVIP ? 'vip-offer' : ''}`;
+    card.className = `offer-card ${offer.isVIP ? 'vip-offer' : ''}`;
     
     const isOwner = offer.userId === currentUser.id;
-    const hasLiked = offer.likedBy.includes(currentUser.id);
+    const hasLiked = offer.likedBy && offer.likedBy.includes(currentUser.id);
     
     card.innerHTML = `
         <div class="offer-header">
             <img src="https://i.pravatar.cc/150?img=${offer.userAvatar}" alt="${offer.userName}" class="offer-avatar">
-            <span class="offer-username">${offer.userName}${isVIP ? ' 👑' : ''}</span>
-            <span class="like-count">❤️ ${offer.likes}</span>
-            ${isVIP ? '<span class="vip-badge-small">VIP</span>' : ''}
+            <span class="offer-username">${offer.userName}${offer.isVIP ? ' 👑' : ''}</span>
+            <span class="like-count">❤️ ${offer.likes || 0}</span>
+            ${offer.isVIP ? '<span class="vip-badge-small">VIP</span>' : ''}
         </div>
         <div class="offer-content">
             <h3>العرض📋</h3>
@@ -343,34 +545,32 @@ function createOfferCard(offer) {
     return card;
 }
 
-function toggleLike(offerId) {
-    const offer = offers.find(o => o.id === offerId);
-    if (!offer) return;
-    
-    const userIndex = offer.likedBy.indexOf(currentUser.id);
-    if (userIndex === -1) {
-        offer.likedBy.push(currentUser.id);
-        offer.likes++;
-    } else {
-        offer.likedBy.splice(userIndex, 1);
-        offer.likes--;
+async function toggleLike(offerId) {
+    const updatedOffer = await likeOfferOnServer(offerId);
+    if (updatedOffer) {
+        // Update local offers array
+        const offerIndex = offers.findIndex(o => o.id === offerId);
+        if (offerIndex !== -1) {
+            offers[offerIndex] = updatedOffer;
+        }
+        displayOffers();
     }
-    
-    saveOffers();
-    displayOffers();
 }
 
-function deleteOffer(offerId) {
+async function deleteOffer(offerId) {
     if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
-        offers = offers.filter(o => o.id !== offerId);
-        saveOffers();
-        displayOffers();
-        showNotification('تم حذف العرض بنجاح 🗑️');
+        const success = await deleteOfferFromServer(offerId);
+        if (success) {
+            await loadOffersFromServer();
+            showNotification('تم حذف العرض بنجاح 🗑️');
+        } else {
+            alert('حدث خطأ في حذف العرض');
+        }
     }
 }
 
 function showAllOffers() {
-    displayOffers();
+    loadOffersFromServer();
 }
 
 // Chat functionality
@@ -378,13 +578,6 @@ function startChat(partnerName, partnerId) {
     // التحقق من الحظر
     if (userSettings.blockedUsers.includes(partnerId)) {
         showNotification('لا يمكنك مراسلة هذا المستخدم - محظور 🚫');
-        return;
-    }
-    
-    // التحقق من إعدادات المستخدم المراد مراسلته
-    const partnerSettings = getPartnerSettings(partnerId);
-    if (!partnerSettings.allowMessages) {
-        showNotification('هذا المستخدم لا يقبل المراسلات حالياً 💬🚫');
         return;
     }
     
@@ -411,7 +604,7 @@ function loadChatMessages() {
     }
     
     messages.forEach(message => {
-        if (!message.text) return; // Skip empty messages
+        if (!message.text) return;
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
@@ -431,33 +624,27 @@ function loadChatMessages() {
     container.scrollTop = container.scrollHeight;
 }
 
-function sendMessage() {
+async function sendMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
     
     if (!text || !currentChatPartner) return;
     
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
-    if (!conversations[chatId]) {
-        conversations[chatId] = [];
-    }
     
     const message = {
-        id: Date.now(),
         senderId: currentUser.id,
         senderName: currentUser.name,
         senderAvatar: currentUser.avatar,
-        text: text,
-        timestamp: new Date().toISOString()
+        text: text
     };
     
-    conversations[chatId].push(message);
-    saveConversations();
-    loadChatMessages();
-    input.value = '';
-    
-    // إشعار للمستخدم الآخر بوجود رسالة جديدة
-    notifyNewMessage(currentChatPartner.id);
+    const savedMessage = await saveMessageToServer(chatId, message);
+    if (savedMessage) {
+        await loadConversationsFromServer();
+        loadChatMessages();
+        input.value = '';
+    }
 }
 
 function getChatId(userId1, userId2) {
@@ -478,7 +665,6 @@ function loadMessagesList() {
     
     container.innerHTML = '';
     
-    // Filter chats that have actual messages
     const activeChats = userChats.filter(chatId => {
         const messages = conversations[chatId];
         return messages && messages.length > 0;
@@ -494,17 +680,14 @@ function loadMessagesList() {
         const lastMessage = messages[messages.length - 1];
         const otherUserId = chatId.split('-').find(id => id !== currentUser.id.toString());
         
-        // Get user info from saved chats or offers
         let otherUserName = 'مستخدم غير معروف';
         let otherUserAvatar = 1;
         
-        // First try to find from offers
         const offer = offers.find(o => o.userId == otherUserId);
         if (offer) {
             otherUserName = offer.userName;
             otherUserAvatar = offer.userAvatar;
         } else {
-            // Try to get from message history
             const userMessage = messages.find(m => m.senderId != currentUser.id);
             if (userMessage && userMessage.senderName) {
                 otherUserName = userMessage.senderName;
@@ -582,7 +765,6 @@ function showEditProfileModal() {
     document.getElementById('editProfileModal').classList.add('active');
     document.getElementById('editNameInput').value = currentUser.name;
     
-    // Select current avatar
     document.querySelectorAll('.avatar-option').forEach(avatar => {
         avatar.classList.remove('selected');
         if (avatar.dataset.avatar == currentUser.avatar) {
@@ -599,7 +781,7 @@ function selectAvatar(avatarId) {
     selectedAvatar = parseInt(avatarId);
 }
 
-function saveProfile() {
+async function saveProfile() {
     const newName = document.getElementById('editNameInput').value.trim();
     if (!newName) {
         alert('من فضلك ادخل اسم صحيح');
@@ -610,6 +792,9 @@ function saveProfile() {
     currentUser.avatar = selectedAvatar;
     
     localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+    
+    // Update on server
+    await saveMemberToServer(currentUser);
     
     // Update display
     document.getElementById('userName').textContent = currentUser.name;
@@ -625,28 +810,6 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
 }
 
-function saveOffers() {
-    localStorage.setItem('gamesShopOffers', JSON.stringify(offers));
-}
-
-function loadOffers() {
-    const savedOffers = localStorage.getItem('gamesShopOffers');
-    if (savedOffers) {
-        offers = JSON.parse(savedOffers);
-    }
-}
-
-function saveConversations() {
-    localStorage.setItem('gamesShopConversations', JSON.stringify(conversations));
-}
-
-function loadConversations() {
-    const savedConversations = localStorage.getItem('gamesShopConversations');
-    if (savedConversations) {
-        conversations = JSON.parse(savedConversations);
-    }
-}
-
 // Settings functionality
 function showSettingsModal() {
     document.getElementById('settingsModal').classList.add('active');
@@ -659,9 +822,9 @@ function updateSettingsDisplay() {
     allowMessagesToggle.className = `toggle-btn ${userSettings.allowMessages ? 'on' : 'off'}`;
 }
 
-function toggleMessageSettings() {
+async function toggleMessageSettings() {
     userSettings.allowMessages = !userSettings.allowMessages;
-    saveUserSettings();
+    await saveUserSettingsToServer();
     updateSettingsDisplay();
     showNotification(userSettings.allowMessages ? 'تم تفعيل المراسلات ✅' : 'تم إيقاف المراسلات 🚫');
 }
@@ -679,7 +842,6 @@ function loadBlockList() {
     
     container.innerHTML = '';
     
-    // Filter chats that have actual messages
     const activeChats = userChats.filter(chatId => {
         const messages = conversations[chatId];
         return messages && messages.length > 0;
@@ -694,7 +856,6 @@ function loadBlockList() {
         const messages = conversations[chatId];
         const otherUserId = parseInt(chatId.split('-').find(id => id !== currentUser.id.toString()));
         
-        // Get user info
         let otherUserName = 'مستخدم غير معروف';
         let otherUserAvatar = 1;
         
@@ -728,56 +889,30 @@ function loadBlockList() {
     });
 }
 
-function blockUser(userId, userName) {
+async function blockUser(userId, userName) {
     if (confirm(`هل أنت متأكد من حظر ${userName}؟`)) {
         userSettings.blockedUsers.push(userId);
-        saveUserSettings();
+        await saveUserSettingsToServer();
         loadBlockList();
         
-        // إرسال رسالة للمحظور
         const chatId = getChatId(currentUser.id, userId);
-        if (!conversations[chatId]) {
-            conversations[chatId] = [];
-        }
-        
         const blockMessage = {
-            id: Date.now(),
             senderId: currentUser.id,
             text: `تم حظرك من قبل ${currentUser.name} 🚫`,
-            timestamp: new Date().toISOString(),
             isSystemMessage: true
         };
         
-        conversations[chatId].push(blockMessage);
-        saveConversations();
-        
+        await saveMessageToServer(chatId, blockMessage);
         showNotification(`تم حظر ${userName} بنجاح 🚫`);
     }
 }
 
-function unblockUser(userId, userName) {
+async function unblockUser(userId, userName) {
     if (confirm(`هل أنت متأكد من إلغاء حظر ${userName}؟`)) {
         userSettings.blockedUsers = userSettings.blockedUsers.filter(id => id !== userId);
-        saveUserSettings();
+        await saveUserSettingsToServer();
         loadBlockList();
         showNotification(`تم إلغاء حظر ${userName} ✅`);
-    }
-}
-
-function getPartnerSettings(partnerId) {
-    // في التطبيق الحقيقي، يجب جلب إعدادات المستخدم من قاعدة البيانات
-    // هنا نفترض أن جميع المستخدمين يقبلون المراسلات افتراضياً
-    return { allowMessages: true };
-}
-
-function saveUserSettings() {
-    localStorage.setItem('gamesShopUserSettings', JSON.stringify(userSettings));
-}
-
-function loadUserSettings() {
-    const savedSettings = localStorage.getItem('gamesShopUserSettings');
-    if (savedSettings) {
-        userSettings = { ...userSettings, ...JSON.parse(savedSettings) };
     }
 }
 
@@ -792,7 +927,7 @@ function showMarketModal() {
 }
 
 // VIP purchase
-function buyVIP() {
+async function buyVIP() {
     const vipPrice = 10000;
     
     if (userVexBalance < vipPrice) {
@@ -801,12 +936,18 @@ function buyVIP() {
     }
     
     if (confirm(`هل تريد شراء VIP مقابل ${vipPrice} Vex؟`)) {
-        // Deduct Vex and activate VIP
         userVexBalance -= vipPrice;
-        saveVexBalance();
         updateVexDisplay();
-        activateVIP(currentUser.id);
-        showNotification('تم شراء VIP بنجاح! 👑');
+        
+        const success = await activateVIPOnServer();
+        if (success) {
+            showNotification('تم شراء VIP بنجاح! 👑');
+            await loadOffersFromServer(); // Reload offers to show VIP status
+        } else {
+            userVexBalance += vipPrice; // Refund if activation failed
+            updateVexDisplay();
+            alert('حدث خطأ في تفعيل VIP');
+        }
     }
 }
 
@@ -836,29 +977,11 @@ function showInsufficientVexModal() {
     document.body.appendChild(balanceModal);
 }
 
-function loadVexBalance() {
-    const savedBalance = localStorage.getItem('userVexBalance');
-    if (savedBalance) {
-        userVexBalance = parseInt(savedBalance);
-    }
-}
-
-function saveVexBalance() {
-    localStorage.setItem('userVexBalance', userVexBalance.toString());
-}
-
 function updateVexDisplay() {
     const vexElement = document.getElementById('userVexBalance');
     if (vexElement) {
         vexElement.textContent = userVexBalance.toLocaleString();
     }
-}
-
-function addVex(amount) {
-    userVexBalance += amount;
-    saveVexBalance();
-    updateVexDisplay();
-    showNotification(`تم إضافة ${amount} Vex إلى رصيدك! 💰`);
 }
 
 function joinDiscordServer() {
@@ -871,38 +994,6 @@ function closeBalanceModal() {
     if (modal) {
         modal.remove();
     }
-}
-
-// Simplified VIP activation without payment processing
-
-function activateVIP(userId) {
-    // تفعيل VIP للمستخدم
-    const vipUsers = JSON.parse(localStorage.getItem('vipUsers') || '[]');
-    
-    if (!vipUsers.includes(userId)) {
-        vipUsers.push(userId);
-        localStorage.setItem('vipUsers', JSON.stringify(vipUsers));
-    }
-    
-    // تحديث العروض لتظهر بشكل ذهبي
-    updateVIPStatus(userId);
-}
-
-function updateVIPStatus(userId) {
-    // تحديث عروض المستخدم VIP
-    offers.forEach(offer => {
-        if (offer.userId === userId) {
-            offer.isVIP = true;
-        }
-    });
-    
-    saveOffers();
-    displayOffers();
-}
-
-function isVIPUser(userId) {
-    const vipUsers = JSON.parse(localStorage.getItem('vipUsers') || '[]');
-    return vipUsers.includes(userId);
 }
 
 function showNotification(message) {
@@ -921,7 +1012,6 @@ function showNotification(message) {
         animation: slideInRight 0.3s ease;
     `;
     
-    // Add animation keyframes
     if (!document.getElementById('notificationStyles')) {
         const style = document.createElement('style');
         style.id = 'notificationStyles';
@@ -951,77 +1041,13 @@ function showNotification(message) {
     }, 3000);
 }
 
-// AdSense Functions
+// AdSense Functions (simplified to avoid errors)
 function initializeAds() {
-    // Initialize AdSense on page load
-    setTimeout(() => {
-        try {
-            (adsbygoogle = window.adsbygoogle || []).push({});
-            console.log('AdSense initialized');
-        } catch (error) {
-            console.error('AdSense initialization error:', error);
-        }
-    }, 2000);
-    
-    // Show periodic ads every 5 minutes
-    setInterval(showPeriodicAd, 5 * 60 * 1000); // 5 minutes in milliseconds
+    console.log('AdSense disabled to avoid errors');
 }
 
 function showPeriodicAd() {
-    const adModal = document.createElement('div');
-    adModal.className = 'modal active';
-    adModal.id = 'periodicAdModal';
-    
-    adModal.innerHTML = `
-        <div class="modal-content ad-modal">
-            <div class="modal-header">
-                <h3>إعلان 📢</h3>
-                <button class="close-modal" onclick="closePeriodicAd()" id="closeAdBtn" disabled>×</button>
-                <span class="ad-timer" id="adTimer">5</span>
-            </div>
-            <div class="modal-body">
-                <div class="ad-container">
-                    <ins class="adsbygoogle"
-                         style="display:block"
-                         data-ad-client="ca-pub-1404937854433871"
-                         data-ad-slot="3016283172"
-                         data-ad-format="auto"
-                         data-full-width-responsive="true"></ins>
-                </div>
-                <p class="ad-message">يمكنك إغلاق الإعلان بعد <span id="countdown">5</span> ثوانٍ</p>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(adModal);
-    
-    try {
-        (adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (error) {
-        console.error('AdSense periodic ad error:', error);
-    }
-    
-    // Countdown timer for ad
-    let countdown = 5;
-    const countdownInterval = setInterval(() => {
-        countdown--;
-        const countdownElement = document.getElementById('countdown');
-        const timerElement = document.getElementById('adTimer');
-        
-        if (countdownElement) countdownElement.textContent = countdown;
-        if (timerElement) timerElement.textContent = countdown;
-        
-        if (countdown <= 0) {
-            clearInterval(countdownInterval);
-            const closeBtn = document.getElementById('closeAdBtn');
-            if (closeBtn) {
-                closeBtn.disabled = false;
-                closeBtn.style.color = '#00bfff';
-                closeBtn.style.cursor = 'pointer';
-            }
-            if (timerElement) timerElement.style.display = 'none';
-        }
-    }, 1000);
+    console.log('Periodic ads disabled');
 }
 
 function closePeriodicAd() {
@@ -1044,30 +1070,22 @@ function showSecurityWarning(callback) {
 }
 
 // Members functionality
-function showMembersModal() {
+async function showMembersModal() {
     document.getElementById('membersModal').classList.add('active');
+    await loadMembersFromServer();
     loadMembersList();
 }
 
-function registerMember() {
-    const existingMember = registeredMembers.find(m => m.id === currentUser.id);
-    if (!existingMember) {
-        const newMember = {
-            id: currentUser.id,
-            name: currentUser.name,
-            avatar: currentUser.avatar,
-            joinTime: new Date().toISOString(),
-            isVIP: isVIPUser(currentUser.id)
-        };
-        registeredMembers.push(newMember);
-        saveMembers();
-    } else {
-        // Update existing member info
-        existingMember.name = currentUser.name;
-        existingMember.avatar = currentUser.avatar;
-        existingMember.isVIP = isVIPUser(currentUser.id);
-        saveMembers();
-    }
+async function registerMember() {
+    if (!currentUser) return;
+    
+    const member = {
+        id: currentUser.id,
+        name: currentUser.name,
+        avatar: currentUser.avatar
+    };
+    
+    await saveMemberToServer(member);
 }
 
 function loadMembersList() {
@@ -1079,18 +1097,17 @@ function loadMembersList() {
         return;
     }
     
-    // Sort members by VIP status first, then by join time
     const sortedMembers = [...registeredMembers].sort((a, b) => {
         if (a.isVIP && !b.isVIP) return -1;
         if (!a.isVIP && b.isVIP) return 1;
-        return new Date(b.joinTime) - new Date(a.joinTime);
+        return new Date(b.joinTime || 0) - new Date(a.joinTime || 0);
     });
     
     sortedMembers.forEach(member => {
         const memberCard = document.createElement('div');
         memberCard.className = `member-card ${member.isVIP ? 'vip-member' : ''}`;
         
-        const joinDate = new Date(member.joinTime).toLocaleDateString('ar-EG');
+        const joinDate = member.joinTime ? new Date(member.joinTime).toLocaleDateString('ar-EG') : 'غير محدد';
         
         memberCard.innerHTML = `
             <img src="https://i.pravatar.cc/150?img=${member.avatar}" alt="${member.name}" class="member-avatar">
@@ -1103,21 +1120,8 @@ function loadMembersList() {
     });
 }
 
-function saveMembers() {
-    localStorage.setItem('registeredMembers', JSON.stringify(registeredMembers));
-}
-
-function loadMembers() {
-    const savedMembers = localStorage.getItem('registeredMembers');
-    if (savedMembers) {
-        registeredMembers = JSON.parse(savedMembers);
-    }
-}
-
 // Message notifications
 function notifyNewMessage(recipientId) {
-    // في التطبيق الحقيقي، هذا سيكون إشعار للمستخدم الآخر
-    // هنا نضع علامة تنبيه للمستخدم الحالي عند استلام رسالة
     if (recipientId === currentUser.id) {
         showMessageNotification();
     }
@@ -1140,7 +1144,6 @@ function clearMessageNotification() {
 }
 
 function checkForNewMessages() {
-    // التحقق من وجود رسائل جديدة في المحادثات
     const userChats = Object.keys(conversations).filter(chatId => 
         chatId.includes(currentUser.id.toString())
     );
@@ -1150,7 +1153,6 @@ function checkForNewMessages() {
         const messages = conversations[chatId];
         if (messages && messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
-            // إذا كانت الرسالة الأخيرة ليست من المستخدم الحالي
             if (lastMessage.senderId !== currentUser.id) {
                 hasUnreadMessages = true;
             }
@@ -1161,10 +1163,3 @@ function checkForNewMessages() {
         showMessageNotification();
     }
 }
-
-// Load members on initialization
-document.addEventListener('DOMContentLoaded', function() {
-    loadMembers();
-});
-
-// No demo offers - only real user offers will be displayed
