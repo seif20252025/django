@@ -1,3 +1,6 @@
+Analyzing the original code and changes, applying the required changes to address the console issue and ensure the global trading system works correctly, integrating API base URL and health check functionalities, and improving offer loading and saving processes.
+```
+```replit_final_file
 // Global variables
 let currentUser = null;
 let offers = [];
@@ -11,6 +14,25 @@ let userSettings = {
 };
 let registeredMembers = [];
 let hasNewMessages = false;
+
+// API Base URL - adjust for your environment
+const API_BASE_URL = window.location.origin;
+
+// Check if server is running
+async function checkServerConnection() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        if (response.ok) {
+            const data = await response.json();
+            console.log('🟢 اتصال الخادم نشط:', data);
+            return true;
+        }
+    } catch (error) {
+        console.log('🔴 خطأ في الاتصال بالخادم:', error);
+        return false;
+    }
+    return false;
+}
 
 // مفتاح التخزين العالمي للعروض
 const GLOBAL_OFFERS_KEY = 'globalGameShopOffers';
@@ -948,169 +970,4 @@ function showNotification(message) {
         right: 20px;
         background: linear-gradient(45deg, #00ff80, #00cc66);
         color: white;
-        padding: 1rem 2rem;
-        border-radius: 10px;
-        box-shadow: 0 10px 25px rgba(0, 255, 128, 0.4);
-        z-index: 3000;
-        font-weight: bold;
-        animation: slideInRight 0.3s ease;
-    `;
-
-    if (!document.getElementById('notificationStyles')) {
-        const style =document.createElement('style');
-        style.id = 'notificationStyles';
-        style.textContent = `
-            @keyframes slideInRight {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOutRight {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
-}
-
-// AdSense Functions
-let adInitialized = false;
-
-function initializeAds() {
-    try {
-        if (typeof adsbygoogle !== 'undefined' && window.adsbygoogle) {
-            const adsenseElements = document.querySelectorAll('.adsbygoogle:not([data-adsense-initialized])');
-            adsenseElements.forEach((element) => {
-                try {
-                    (adsbygoogle = window.adsbygoogle || []).push({});
-                    element.dataset.adsenseInitialized = 'true';
-                } catch (e) {
-                    console.log('AdSense error:', e);
-                }
-            });
-            console.log('AdSense loaded successfully');
-        }
-    } catch (e) {
-        console.log('AdSense initialization error:', e);
-    }
-}
-
-// Security Warning Modal
-function showSecurityWarning(callback) {
-    const modal = document.getElementById('securityWarningModal');
-    modal.classList.add('active');
-
-    const agreeBtn = document.getElementById('agreeWarning');
-    agreeBtn.onclick = () => {
-        modal.classList.remove('active');
-        if (callback) callback();
-    };
-}
-
-// Members functionality
-function showMembersModal() {
-    document.getElementById('membersModal').classList.add('active');
-    loadMembersList();
-}
-
-function registerMember() {
-    if (!currentUser) return;
-
-    const member = {
-        id: currentUser.id,
-        name: currentUser.name,
-        avatar: currentUser.avatar,
-        joinTime: new Date().toISOString()
-    };
-
-    const existingMemberIndex = registeredMembers.findIndex(m => m.id === currentUser.id);
-    if (existingMemberIndex !== -1) {
-        registeredMembers[existingMemberIndex] = member;
-    } else {
-        registeredMembers.push(member);
-    }
-
-    saveMembersToStorage();
-}
-
-function loadMembersList() {
-    const container = document.getElementById('membersList');
-    container.innerHTML = '';
-
-    if (registeredMembers.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا يوجد أعضاء حالياً</div>';
-        return;
-    }
-
-    const sortedMembers = [...registeredMembers].sort((a, b) => {
-        if (a.isVIP && !b.isVIP) return -1;
-        if (!a.isVIP && b.isVIP) return 1;
-        return new Date(b.joinTime || 0) - new Date(a.joinTime || 0);
-    });
-
-    sortedMembers.forEach(member => {
-        const memberCard = document.createElement('div');
-        memberCard.className = `member-card ${member.isVIP ? 'vip-member' : ''}`;
-
-        const joinDate = member.joinTime ? new Date(member.joinTime).toLocaleDateString('ar-EG') : 'غير محدد';
-
-        memberCard.innerHTML = `
-            <img src="https://i.pravatar.cc/150?img=${member.avatar}" alt="${member.name}" class="member-avatar">
-            <div class="member-name">${member.name}${member.isVIP ? '<span class="vip-crown">👑</span>' : ''}</div>
-            <div class="member-greeting">منور يا ${member.name}</div>
-            <div class="member-join-time">انضم في ${joinDate}</div>
-        `;
-
-        container.appendChild(memberCard);
-    });
-}
-
-// Message notifications
-function showMessageNotification() {
-    const notification = document.getElementById('messageNotification');
-    if (notification) {
-        notification.classList.remove('hidden');
-        hasNewMessages = true;
-    }
-}
-
-function clearMessageNotification() {
-    const notification = document.getElementById('messageNotification');
-    if (notification) {
-        notification.classList.add('hidden');
-        hasNewMessages = false;
-    }
-}
-
-function checkForNewMessages() {
-    const userChats = Object.keys(conversations).filter(chatId => 
-        chatId.includes(currentUser.id.toString())
-    );
-
-    let hasUnreadMessages = false;
-    userChats.forEach(chatId => {
-        const messages = conversations[chatId];
-        if (messages && messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            if (lastMessage.senderId !== currentUser.id) {
-                hasUnreadMessages = true;
-            }
-        }
-    });
-
-    if (hasUnreadMessages) {
-        showMessageNotification();
-    }
-}
+        padding:

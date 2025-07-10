@@ -4,12 +4,16 @@
   "version": "1.0.0",
   "description": "Games Shop with VIP Payment System",
   "main": "index.html",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node payment-backend.js",
     "dev": "node payment-backend.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
   },
   "keywords": ["games", "shop", "payment", "vip"],
   "author": "",
