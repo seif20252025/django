@@ -970,4 +970,150 @@ function showNotification(message) {
         right: 20px;
         background: linear-gradient(45deg, #00ff80, #00cc66);
         color: white;
-        padding:
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: bold;
+        box-shadow: 0 5px 15px rgba(0, 255, 128, 0.3);
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-check-circle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Member management
+function registerMember() {
+    if (!currentUser) return;
+    
+    const existingMember = registeredMembers.find(member => member.id === currentUser.id);
+    if (!existingMember) {
+        registeredMembers.push({
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+            joinDate: new Date().toISOString(),
+            isOnline: true
+        });
+        saveMembersToStorage();
+    } else {
+        existingMember.isOnline = true;
+        existingMember.name = currentUser.name;
+        existingMember.avatar = currentUser.avatar;
+        saveMembersToStorage();
+    }
+}
+
+function showMembersModal() {
+    document.getElementById('membersModal').classList.add('active');
+    loadMembersList();
+}
+
+function loadMembersList() {
+    const container = document.getElementById('membersList');
+    container.innerHTML = '';
+
+    if (registeredMembers.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا يوجد أعضاء مسجلين حالياً</div>';
+        return;
+    }
+
+    registeredMembers.forEach(member => {
+        const memberItem = document.createElement('div');
+        memberItem.className = 'member-item';
+        memberItem.innerHTML = `
+            <div class="member-info">
+                <img src="https://i.pravatar.cc/150?img=${member.avatar}" alt="${member.name}" class="member-avatar">
+                <div class="member-details">
+                    <div class="member-name">${member.name}</div>
+                    <div class="member-status ${member.isOnline ? 'online' : 'offline'}">
+                        ${member.isOnline ? 'متصل الآن' : 'غير متصل'}
+                    </div>
+                </div>
+            </div>
+            <button class="member-message-btn" onclick="startChat('${member.name}', ${member.id})">
+                مراسلة 💬
+            </button>
+        `;
+        container.appendChild(memberItem);
+    });
+}
+
+function showSecurityWarning(callback) {
+    document.getElementById('securityWarningModal').classList.add('active');
+    
+    document.getElementById('agreeWarning').onclick = function() {
+        document.getElementById('securityWarningModal').classList.remove('active');
+        if (callback) callback();
+    };
+}
+
+function checkForNewMessages() {
+    const userChats = Object.keys(conversations).filter(chatId => 
+        chatId.includes(currentUser.id.toString())
+    );
+
+    let hasNew = false;
+    userChats.forEach(chatId => {
+        const messages = conversations[chatId];
+        if (messages && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.senderId !== currentUser.id) {
+                const messageTime = new Date(lastMessage.timestamp);
+                const now = new Date();
+                if (now - messageTime < 60000) { // رسالة جديدة خلال آخر دقيقة
+                    hasNew = true;
+                }
+            }
+        }
+    });
+
+    if (hasNew && !hasNewMessages) {
+        showMessageNotification();
+        hasNewMessages = true;
+    }
+}
+
+function showMessageNotification() {
+    const badge = document.getElementById('messageNotification');
+    if (badge) {
+        badge.classList.remove('hidden');
+    }
+}
+
+function clearMessageNotification() {
+    const badge = document.getElementById('messageNotification');
+    if (badge) {
+        badge.classList.add('hidden');
+    }
+    hasNewMessages = false;
+}
+
+// AdSense initialization
+function initializeAds() {
+    if (typeof adsbygoogle !== 'undefined') {
+        try {
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (e) {
+            console.log('AdSense not loaded yet');
+        }
+    }
+}
