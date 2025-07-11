@@ -2822,7 +2822,6 @@ function showInsufficientVexModal() {
                     <div class="vex-icon" style="font-size: 3rem; margin-bottom: 1rem;">Vex</div>
                     <h4>عذراً، رصيدك من Vex غير كافي لإتمام هذه العملية</h4>
                     <p>سعر VIP: 10,000 Vex</p>
-                    ```python
                     <p>رصيدك الحالي: ${userVexBalance} Vex</p>
                     <p>يمكنك الحصول على المزيد من Vex من خلال الأنشطة في الموقع</p>
                 </div>
