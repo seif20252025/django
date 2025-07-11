@@ -204,9 +204,9 @@
                     <div class="form-group">
                         <label>المقابل🔁</label>
                         <div class="exchange-options">
-                            <button class="exchange-option-btn" data-option="offer_only" onclick="selectExchangeOption('offer_only')">عرضك فقط📋</button>
-                            <button class="exchange-option-btn" data-option="offer_plus" onclick="selectExchangeOption('offer_plus')">عرضك و المزيد من الاشياء📃</button>
-                            <button class="exchange-option-btn" data-option="negotiate" onclick="selectExchangeOption('negotiate')">نتفق علي شي💬</button>
+                            <button type="button" class="exchange-option-btn" data-option="offer_only" onclick="selectExchangeOption('offer_only')">عرضك فقط📋</button>
+                            <button type="button" class="exchange-option-btn" data-option="offer_plus" onclick="selectExchangeOption('offer_plus')">عرضك و المزيد من الاشياء📃</button>
+                            <button type="button" class="exchange-option-btn" data-option="negotiate" onclick="selectExchangeOption('negotiate')">نتفق علي شي💬</button>
                         </div>
                     </div>
                     
@@ -226,7 +226,7 @@
                         <div id="sendOfferImagePreview" class="image-preview hidden"></div>
                     </div>
                     
-                    <button onclick="sendOfferMessage()" class="submit-btn" style="background: linear-gradient(45deg, #007bff, #0056b3);">ارسال رساله📩</button>
+                    <button type="button" onclick="sendOfferMessage()" class="submit-btn" style="background: linear-gradient(45deg, #007bff, #0056b3);">ارسال رساله📩</button>
                 </div>
             </div>
         </div>
@@ -271,7 +271,7 @@
                         <label>ضيفني و تواصل معي💬</label>
                         <textarea id="acceptContactInfo" class="form-control" placeholder="ضع حسابك أو رقم هاتفك للتواصل (ديسكورد/واتساب/انستجرام/فيسبوك)" rows="3" required></textarea>
                     </div>
-                    <button onclick="acceptOfferMessage()" class="submit-btn" style="background: linear-gradient(45deg, #00ff80, #00cc66);">قبول العرض✅</button>
+                    <button type="button" onclick="acceptOfferMessage()" class="submit-btn" style="background: linear-gradient(45deg, #00ff80, #00cc66);">قبول العرض✅</button>
                 </div>
             </div>
         </div>

@@ -693,9 +693,16 @@ function setupEventListeners() {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const preview = document.getElementById('customAvatarPreview');
-                preview.innerHTML = `<img src="${e.target.result}" alt="صورة مخصصة" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">`;
+                preview.innerHTML = `<img src="${e.target.result}" alt="صورة مخصصة" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #00bfff; box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);">`;
                 preview.classList.remove('hidden');
+                
+                // إزالة التحديد من الصور الافتراضية
+                document.querySelectorAll('.avatar-option').forEach(avatar => {
+                    avatar.classList.remove('selected');
+                });
+                
                 selectedAvatar = e.target.result; // Set custom image as selected avatar
+                console.log('📸 تم اختيار صورة مخصصة');
             };
             reader.readAsDataURL(file);
         }
@@ -1115,7 +1122,13 @@ async function showMainPage() {
 
     // Update user info
     document.getElementById('userName').textContent = currentUser.name;
-    document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
+    
+    // عرض الصورة الصحيحة (مخصصة أو افتراضية)
+    if (currentUser.avatar === 'custom' && currentUser.customAvatar) {
+        document.getElementById('userAvatar').src = currentUser.customAvatar;
+    } else {
+        document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
+    }
 
     // عرض الآيدي تحت الاسم
     const userIdElement = document.getElementById('userId');
@@ -1552,6 +1565,8 @@ function showSendOfferMessageModal(offerId, offerOwnerName, offerOwnerId) {
     
     // عرض المودال
     document.getElementById('sendOfferMessageModal').classList.add('active');
+    
+    console.log('📩 تم فتح نافذة إرسال رسالة العرض لـ:', offerOwnerName);
 }
 
 function resetSendOfferMessageForm() {
@@ -1576,8 +1591,11 @@ function selectExchangeOption(option) {
         btn.classList.remove('selected');
     });
     
-    // تحديد الزر المضغوط
-    event.target.classList.add('selected');
+    // العثور على الزر المضغوط وتحديده
+    const targetBtn = document.querySelector(`[data-option="${option}"]`);
+    if (targetBtn) {
+        targetBtn.classList.add('selected');
+    }
     
     // إخفاء جميع الحقول الإضافية
     document.getElementById('additionalThingsInput').classList.add('hidden');
@@ -1586,9 +1604,13 @@ function selectExchangeOption(option) {
     // عرض الحقل المناسب حسب الاختيار
     if (option === 'offer_plus') {
         document.getElementById('additionalThingsInput').classList.remove('hidden');
+        console.log('🔄 تم تفعيل خيار العرض + أشياء إضافية');
     } else if (option === 'negotiate') {
         document.getElementById('contactDetailsInput').classList.remove('hidden');
+        console.log('🔄 تم تفعيل خيار التفاوض');
     }
+    
+    console.log('✅ تم اختيار نوع المقابل:', option);
 }
 
 function previewSendOfferImage() {
@@ -1609,6 +1631,11 @@ function previewSendOfferImage() {
 }
 
 async function sendOfferMessage() {
+    if (!window.selectedOffer) {
+        showNotification('خطأ: لم يتم تحديد العرض المراد الرد عليه', 'error');
+        return;
+    }
+    
     const offerDescription = document.getElementById('offerDescription').value.trim();
     const selectedOption = document.querySelector('.exchange-option-btn.selected');
     
@@ -2464,12 +2491,44 @@ function showEditProfileModal() {
     document.getElementById('editProfileModal').classList.add('active');
     document.getElementById('editNameInput').value = currentUser.name;
 
+    // إعادة تعيين النموذج
     document.querySelectorAll('.avatar-option').forEach(avatar => {
         avatar.classList.remove('selected');
-        if (avatar.dataset.avatar == currentUser.avatar) {
-            avatar.classList.add('selected');
-        }
     });
+    
+    const customPreview = document.getElementById('customAvatarPreview');
+    customPreview.classList.add('hidden');
+    customPreview.innerHTML = '';
+    
+    // إذا كان المستخدم يستخدم صورة مخصصة
+    if (currentUser.avatar === 'custom' && currentUser.customAvatar) {
+        // تفعيل تبويب الصورة المخصصة
+        document.getElementById('customAvatarTab').classList.add('active');
+        document.getElementById('defaultAvatarsTab').classList.remove('active');
+        document.getElementById('customAvatarContainer').classList.remove('hidden');
+        document.getElementById('defaultAvatarsContainer').classList.add('hidden');
+        
+        // عرض الصورة المخصصة
+        customPreview.innerHTML = `<img src="${currentUser.customAvatar}" alt="صورة مخصصة" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #00bfff; box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);">`;
+        customPreview.classList.remove('hidden');
+        
+        selectedAvatar = currentUser.customAvatar;
+    } else {
+        // تفعيل تبويب الصور الافتراضية
+        document.getElementById('defaultAvatarsTab').classList.add('active');
+        document.getElementById('customAvatarTab').classList.remove('active');
+        document.getElementById('defaultAvatarsContainer').classList.remove('hidden');
+        document.getElementById('customAvatarContainer').classList.add('hidden');
+        
+        // تحديد الصورة الافتراضية
+        document.querySelectorAll('.avatar-option').forEach(avatar => {
+            if (avatar.dataset.avatar == currentUser.avatar) {
+                avatar.classList.add('selected');
+            }
+        });
+        
+        selectedAvatar = currentUser.avatar;
+    }
 }
 
 function selectAvatar(avatarId) {
@@ -2490,15 +2549,37 @@ async function saveProfile() {
     currentUser.name = newName;
     currentUser.avatar = selectedAvatar;
 
+    // إذا كانت الصورة مخصصة (string يحتوي على data:image)
+    if (typeof selectedAvatar === 'string' && selectedAvatar.startsWith('data:image')) {
+        currentUser.customAvatar = selectedAvatar;
+        currentUser.avatar = 'custom';
+    } else {
+        // إذا كانت صورة افتراضية، احذف الصورة المخصصة
+        delete currentUser.customAvatar;
+    }
+
     localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
 
     // Update display
     document.getElementById('userName').textContent = currentUser.name;
-    document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
+    
+    // عرض الصورة الصحيحة في البروفايل
+    if (currentUser.avatar === 'custom' && currentUser.customAvatar) {
+        document.getElementById('userAvatar').src = currentUser.customAvatar;
+    } else {
+        document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
+    }
+    
     updateVexDisplay();
 
     closeModal('editProfileModal');
     showNotification('تم حفظ الاعدادات بنجاح! ✅');
+    
+    console.log('✅ تم حفظ البروفايل:', {
+        name: currentUser.name,
+        avatar: currentUser.avatar,
+        hasCustomAvatar: !!currentUser.customAvatar
+    });
 }
 
 // Utility functions
