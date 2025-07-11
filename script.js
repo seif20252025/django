@@ -15,6 +15,16 @@ let userOnlineStatus = {};
 let typingUsers = {};
 let typingTimeout = null;
 
+// إنشاء معرف 10 أرقام للمستخدم
+function generateUserId() {
+    return Math.floor(1000000000 + Math.random() * 9000000000);
+}
+
+// التحقق من صلاحيات الأدمن بناءً على الآيدي
+function isOwnerAdmin(userId) {
+    return userId === 1020304050; // الآيدي الخاص بك
+}
+
 // API Base URL
 const API_BASE_URL = window.location.origin;
 
@@ -675,35 +685,31 @@ function setupEventListeners() {
         });
 
         document.getElementById('giveVexBtn').addEventListener('click', async () => {
-            const email = document.getElementById('vexUserEmail').value.trim();
+            const userId = document.getElementById('vexUserId').value.trim();
             const amount = parseInt(document.getElementById('vexAmount').value);
 
-            if (!email || !amount || amount < 1) {
-                showNotification('من فضلك أدخل بريد إلكتروني صحيح ومقدار VEX صالح', 'error');
+            if (!userId || !amount || amount < 1) {
+                showNotification('من فضلك أدخل آيدي صحيح ومقدار VEX صالح', 'error');
                 return;
             }
 
-            // Find user by email
-            const targetUser = registeredMembers.find(user => user.email === email);
+            // Find user by ID
+            const targetUser = registeredMembers.find(user => user.id.toString() === userId);
             if (!targetUser) {
-                showNotification('لم يتم العثور على مستخدم بهذا البريد الإلكتروني', 'error');
+                showNotification('لم يتم العثور على مستخدم بهذا الآيدي', 'error');
                 return;
             }
 
-            // Give VEX (simulate API call)
+            // Give VEX
             try {
-                // Simulate API call to update VEX balance
-                // In a real application, you would send a request to your server
-                // and update the user's balance in the database.
-                // This is a client-side simulation only.
                 const currentVex = parseInt(localStorage.getItem(`vex_${targetUser.id}`) || '0');
                 const newVex = currentVex + amount;
                 localStorage.setItem(`vex_${targetUser.id}`, newVex.toString());
 
-                showNotification(`تم إضافة ${amount} VEX إلى حساب ${targetUser.name} بنجاح ✅`);
+                showNotification(`تم إضافة ${amount} VEX إلى حساب ${targetUser.name} (ID: ${targetUser.id}) بنجاح ✅`);
 
                 // Clear form
-                document.getElementById('vexUserEmail').value = '';
+                document.getElementById('vexUserId').value = '';
                 document.getElementById('vexAmount').value = '';
                 document.getElementById('adminVexModal').classList.remove('active');
 
@@ -718,18 +724,18 @@ function setupEventListeners() {
         });
 
         document.getElementById('banUserBtn').addEventListener('click', async () => {
-            const userName = document.getElementById('banUserName').value.trim();
+            const userId = document.getElementById('banUserId').value.trim();
             const duration = parseInt(document.getElementById('banDuration').value);
 
-            if (!userName || !duration || duration < 1) {
-                showNotification('من فضلك أدخل اسم المستخدم ومدة الطرد', 'error');
+            if (!userId || !duration || duration < 1) {
+                showNotification('من فضلك أدخل آيدي المستخدم ومدة الطرد', 'error');
                 return;
             }
 
-            // Find user by name
-            const targetUser = registeredMembers.find(user => user.name === userName);
+            // Find user by ID
+            const targetUser = registeredMembers.find(user => user.id.toString() === userId);
             if (!targetUser) {
-                showNotification('لم يتم العثور على مستخدم بهذا الاسم', 'error');
+                showNotification('لم يتم العثور على مستخدم بهذا الآيدي', 'error');
                 return;
             }
 
@@ -738,10 +744,10 @@ function setupEventListeners() {
                 const banEndTime = new Date(Date.now() + duration * 60 * 60 * 1000); // hours to milliseconds
                 localStorage.setItem(`ban_${targetUser.id}`, banEndTime.toISOString());
 
-                showNotification(`تم طرد ${userName} لمدة ${duration} ساعة ✅`);
+                showNotification(`تم طرد ${targetUser.name} (ID: ${targetUser.id}) لمدة ${duration} ساعة ✅`);
 
                 // Clear form
-                document.getElementById('banUserName').value = '';
+                document.getElementById('banUserId').value = '';
                 document.getElementById('banDuration').value = '';
                 document.getElementById('adminBanModal').classList.remove('active');
 
@@ -958,9 +964,10 @@ async function handleSignup() {
             return;
         }
 
-        // إنشاء مستخدم جديد
+        // إنشاء مستخدم جديد مع معرف 10 أرقام
+        const newUserId = email === 'seifelpa2020@gmail.com' ? 1020304050 : generateUserId();
         const newUser = {
-            id: Date.now(),
+            id: newUserId,
             name: name,
             email: email,
             password: password,
@@ -1065,6 +1072,13 @@ async function showMainPage() {
     // Update user info
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
+    
+    // عرض الآيدي تحت الاسم
+    const userIdElement = document.getElementById('userId');
+    if (userIdElement) {
+        userIdElement.textContent = `ID: ${currentUser.id}`;
+    }
+    
     updateVexDisplay();
 
     // تحديد صلاحيات المستخدم التلقائية
@@ -1270,6 +1284,7 @@ function createOfferCard(offer) {
 
     const isOwner = offer.userId === currentUser.id;
     const hasLiked = offer.likedBy && offer.likedBy.includes(currentUser.id);
+    const isAdmin = currentUser && isOwnerAdmin(currentUser.id);
 
     card.innerHTML = `
         <div class="offer-header">
@@ -1300,11 +1315,20 @@ function createOfferCard(offer) {
                     ${hasLiked ? 'الغاء اعجاب💔' : 'لايك👍'}
                 </button>
                 ${isOwner ? `<button class="action-btn delete-btn" onclick="deleteOffer(${offer.id})">حــــذف🗑️</button>` : ''}
+                ${isAdmin && !isOwner ? `<button class="action-btn admin-delete-btn" onclick="adminDeleteOffer(${offer.id})">حذف إداري⚡</button>` : ''}
             </div>
         </div>
     `;
 
     return card;
+}
+
+// وظيفة الحذف الإداري
+function adminDeleteOffer(offerId) {
+    if (confirm('هل أنت متأكد من حذف هذا العرض كأدمن؟')) {
+        deleteOffer(offerId);
+        showNotification('تم حذف العرض بصلاحيات الأدمن ⚡', 'success');
+    }
 }
 
 async function toggleLike(offerId) {
@@ -1513,6 +1537,11 @@ function loadChatMessages() {
 
         const messageDiv = document.createElement('div');
         const isSent = message.senderId === currentUser.id;
+        
+        // إنشاء حاوي للرسالة
+        const messageWrapper = document.createElement('div');
+        messageWrapper.className = `message-wrapper ${isSent ? 'sent-wrapper' : 'received-wrapper'}`;
+        
         messageDiv.className = `chat-message ${isSent ? 'sent' : 'received'}`;
 
         const messageTime = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('ar-EG', {
@@ -1531,7 +1560,9 @@ function loadChatMessages() {
             ${messageContent}
             ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
-        container.appendChild(messageDiv);
+        
+        messageWrapper.appendChild(messageDiv);
+        container.appendChild(messageWrapper);
         console.log(`📨 تم عرض رسالة ${index + 1}: "${message.text || 'صورة'}" من`, isSent ? 'أنت' : message.senderName || 'المستخدم الآخر');
     });
 
@@ -1577,6 +1608,9 @@ async function sendMessage() {
     // مسح المدخل
     input.value = '';
 
+    // إظهار إشعار الإرسال مع نور أبيض
+    showMessageSentNotification();
+
     // حفظ في الخادم والإشعار
     try {
         const serverSaved = await saveConversationToServer(chatId, message);
@@ -1597,6 +1631,45 @@ async function sendMessage() {
         console.error('خطأ في إرسال الرسالة:', error);
         showNotification('حدث خطأ في إرسال الرسالة', 'error');
     }
+}
+
+// إشعار إرسال الرسالة مع نور أبيض
+function showMessageSentNotification() {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(45deg, #00bfff, #ffffff);
+        color: #000;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px rgba(0, 191, 255, 0.6);
+        z-index: 10000;
+        animation: messageGlow 0.6s ease;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+    `;
+
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-paper-plane" style="color: #007bff;"></i>
+            <span>تم الإرسال ✅</span>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 1500);
 }
 
 async function sendImageMessage() {
@@ -2176,9 +2249,8 @@ function showNotification(message, type = 'success') {
 
 // تحديد صلاحيات المستخدم التلقائياً
 function setUserPermissions() {
-    const ownerEmail = 'seifelpa2020@gmail.com'; // بريدك الإلكتروني كمالك التطبيق
-    
-    if (currentUser.email === ownerEmail) {
+    // التحقق من الآيدي المحدد للأدمن
+    if (isOwnerAdmin(currentUser.id)) {
         // إعطاء صلاحيات أدمن للمالك تلقائياً
         currentUser.role = 'admin';
         currentUser.isOwner = true;
@@ -2191,6 +2263,7 @@ function setUserPermissions() {
         const userRank = document.getElementById('userRank');
         if (userRank) {
             userRank.textContent = 'Owner/Admin';
+            userRank.classList.add('admin');
             userRank.style.color = '#ffd700';
             userRank.style.fontWeight = 'bold';
         }

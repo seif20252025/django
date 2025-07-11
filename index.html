@@ -66,6 +66,7 @@
                         <img id="userAvatar" src="" alt="صورة المستخدم" class="user-avatar">
                         <div class="user-details">
                             <span id="userName">اسم المستخدم</span>
+                            <span id="userId" class="user-id">ID: 0000000000</span>
                             <span id="userRank" class="user-rank">Member</span>
                         </div>
                         <div class="vex-balance">
@@ -534,8 +535,8 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>البريد الإلكتروني للمستخدم</label>
-                        <input type="email" id="vexUserEmail" class="form-control" placeholder="أدخل الإيميل">
+                        <label>آيدي المستخدم (10 أرقام)</label>
+                        <input type="number" id="vexUserId" class="form-control" placeholder="أدخل الآيدي" maxlength="10">
                     </div>
                     <div class="form-group">
                         <label>مقدار VEX المراد إضافته</label>
@@ -555,8 +556,8 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>اسم المستخدم</label>
-                        <input type="text" id="banUserName" class="form-control" placeholder="أدخل اسم المستخدم">
+                        <label>آيدي المستخدم (10 أرقام)</label>
+                        <input type="number" id="banUserId" class="form-control" placeholder="أدخل الآيدي" maxlength="10">
                     </div>
                     <div class="form-group">
                         <label>مدة الطرد (بالساعات)</label>
