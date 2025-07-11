@@ -1109,7 +1109,6 @@ function showCurrencyOptions() {
     document.getElementById('otherBtn').classList.remove('active');
 }
 
-```python
 function showAccountInput() {
     document.getElementById('accountInput').classList.remove('hidden');
     document.getElementById('currencyOptions').classList.add('hidden');
