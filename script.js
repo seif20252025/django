@@ -280,6 +280,11 @@ async function loadConversationsFromServer() {
 // حفظ المحادثة في الخادم
 async function saveConversationToServer(chatId, message) {
     try {
+        if (!currentChatPartner) {
+            console.log('⚠️ لا يوجد مستخدم للمحادثة');
+            return false;
+        }
+
         const response = await fetch(`${API_BASE_URL}/api/conversations`, {
             method: 'POST',
             headers: {
@@ -1060,6 +1065,8 @@ async function handleSignup() {
                         email: result.user.email,
                         avatar: result.user.avatar
                     };
+                    
+                    // حفظ بيانات المستخدم للدخول التلقائي
                     localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
 
                     // تسجيل المستخدم في المصفوفة المحلية
@@ -1076,17 +1083,19 @@ async function handleSignup() {
                         localStorage.setItem('gamesShopUsers', JSON.stringify(savedUsers));
                     }
 
+                    // تحميل الرصيد والدخول التلقائي للصفحة الرئيسية
                     loadUserVexBalance();
                     await showMainPage();
-                    showNotification('تم إنشاء الحساب بنجاح! 🎉');
+                    showNotification('تم إنشاء الحساب بنجاح! مرحباً بك في GAMES SHOP 🎉');
+                    console.log('✅ تم إنشاء الحساب وتسجيل الدخول تلقائياً للمستخدم:', currentUser.name);
                     return;
                 } else {
-                    showNotification(result.error, 'error');
+                    showNotification(result.error || 'خطأ في إنشاء الحساب', 'error');
                     return;
                 }
             }
         } catch (serverError) {
-            console.log('Server registration failed, trying local registration:', serverError);
+            console.log('⚠️ فشل التسجيل في الخادم، محاولة التسجيل المحلي:', serverError);
         }
 
         // في حالة فشل الخادم، استخدم التسجيل المحلي
@@ -1118,14 +1127,19 @@ async function handleSignup() {
             email: newUser.email,
             avatar: newUser.avatar
         };
+        
+        // حفظ بيانات المستخدم للدخول التلقائي
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+        
+        // تحميل الرصيد والدخول التلقائي للصفحة الرئيسية
         loadUserVexBalance();
         await showMainPage();
-        showNotification('تم إنشاء الحساب بنجاح! 🎉');
+        showNotification('تم إنشاء الحساب بنجاح! مرحباً بك في GAMES SHOP 🎉');
+        console.log('✅ تم إنشاء الحساب وتسجيل الدخول تلقائياً للمستخدم:', currentUser.name);
 
     } catch (error) {
-        console.error('Registration error:', error);
-        showNotification('خطأ في إنشاء الحساب', 'error');
+        console.error('❌ خطأ في إنشاء الحساب:', error);
+        showNotification('حدث خطأ في إنشاء الحساب، يرجى المحاولة مرة أخرى', 'error');
     } finally {
         showLoading(false);
     }
@@ -1875,65 +1889,84 @@ async function sendOfferMessage() {
         sendOfferMessageData();
     }
 
-    function sendOfferMessageData() {
-        const exchangeTypeText = {
-            'offer_only': 'عرضك فقط📋',
-            'offer_plus': 'عرضك و المزيد من الأشياء📃',
-            'negotiate': 'نتفق على شيء💬'
-        };
+    async function sendOfferMessageData() {
+        try {
+            const exchangeTypeText = {
+                'offer_only': 'عرضك فقط📋',
+                'offer_plus': 'عرضك و المزيد من الأشياء📃',
+                'negotiate': 'نتفق على شيء💬'
+            };
 
-        const offerMessage = {
-            type: 'offer_message',
-            id: Date.now() + Math.random(),
-            senderId: currentUser.id,
-            senderName: currentUser.name,
-            senderAvatar: currentUser.avatar,
-            recipientId: window.selectedOffer.ownerId,
-            recipientName: window.selectedOffer.ownerName,
-            offerId: window.selectedOffer.id,
-            offerDescription: offerDescription,
-            exchangeType: exchangeType,
-            exchangeTypeText: exchangeTypeText[exchangeType],
-            exchangeDetails: exchangeDetails,
-            contactInfo: contactInfo,
-            image: imageData,
-            timestamp: new Date().toISOString(),
-            status: 'pending'
-        };
+            const offerMessage = {
+                type: 'offer_message',
+                id: Date.now() + Math.random(),
+                senderId: currentUser.id,
+                senderName: currentUser.name,
+                senderAvatar: currentUser.avatar,
+                recipientId: window.selectedOffer.ownerId,
+                recipientName: window.selectedOffer.ownerName,
+                offerId: window.selectedOffer.id,
+                offerDescription: offerDescription,
+                exchangeType: exchangeType,
+                exchangeTypeText: exchangeTypeText[exchangeType],
+                exchangeDetails: exchangeDetails,
+                contactInfo: contactInfo,
+                image: imageData,
+                timestamp: new Date().toISOString(),
+                status: 'pending'
+            };
 
-        // حفظ الرسالة في التخزين المحلي
-        const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
-        offerMessages.push(offerMessage);
-        localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
+            // حفظ الرسالة في التخزين المحلي
+            const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
+            offerMessages.push(offerMessage);
+            localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
 
-        // إرسال الرسالة كرسالة عادية أيضاً
-        const chatId = getChatId(currentUser.id, window.selectedOffer.ownerId);
-        if (!conversations[chatId]) {
-            conversations[chatId] = [];
+            // إرسال الرسالة كرسالة عادية أيضاً
+            const chatId = getChatId(currentUser.id, window.selectedOffer.ownerId);
+            if (!conversations[chatId]) {
+                conversations[chatId] = [];
+            }
+
+            const chatMessage = {
+                senderId: currentUser.id,
+                senderName: currentUser.name,
+                senderAvatar: currentUser.avatar,
+                text: `📩 رسالة عرض جديدة:\n\n${offerDescription}\n\nالمقابل: ${exchangeTypeText[exchangeType]}${exchangeDetails ? '\nالأشياء الإضافية: ' + exchangeDetails : ''}${contactInfo ? '\nمعلومات التواصل: ' + contactInfo : ''}`,
+                timestamp: new Date().toISOString(),
+                type: 'offer_message',
+                offerMessageId: offerMessage.id
+            };
+
+            conversations[chatId].push(chatMessage);
+            saveConversationsToStorage();
+
+            // حفظ في الخادم
+            try {
+                // إنشاء currentChatPartner مؤقتاً لهذه العملية
+                const tempChatPartner = currentChatPartner;
+                currentChatPartner = {
+                    id: window.selectedOffer.ownerId,
+                    name: window.selectedOffer.ownerName
+                };
+                
+                await saveConversationToServer(chatId, chatMessage);
+                await notifyNewMessage(window.selectedOffer.ownerId);
+                
+                // استعادة currentChatPartner الأصلي
+                currentChatPartner = tempChatPartner;
+            } catch (serverError) {
+                console.log('⚠️ فشل حفظ في الخادم:', serverError);
+            }
+
+            // إغلاق المودال وإظهار رسالة نجاح
+            document.getElementById('sendOfferMessageModal').classList.remove('active');
+            showNotification('تم إرسال الرسالة بنجاح! 📩');
+
+            console.log('✅ تم إرسال رسالة العرض:', offerMessage);
+        } catch (error) {
+            console.error('❌ خطأ في إرسال رسالة العرض:', error);
+            showNotification('حدث خطأ في إرسال الرسالة، يرجى المحاولة مرة أخرى', 'error');
         }
-
-        const chatMessage = {
-            senderId: currentUser.id,
-            senderName: currentUser.name,
-            senderAvatar: currentUser.avatar,
-            text: `📩 رسالة عرض جديدة:\n\n${offerDescription}\n\nالمقابل: ${exchangeTypeText[exchangeType]}${exchangeDetails ? '\nالأشياء الإضافية: ' + exchangeDetails : ''}${contactInfo ? '\nمعلومات التواصل: ' + contactInfo : ''}`,
-            timestamp: new Date().toISOString(),
-            type: 'offer_message',
-            offerMessageId: offerMessage.id
-        };
-
-        conversations[chatId].push(chatMessage);
-        saveConversationsToStorage();
-
-        // حفظ في الخادم
-        saveConversationToServer(chatId, chatMessage);
-        notifyNewMessage(window.selectedOffer.ownerId);
-
-        // إغلاق المودال وإظهار رسالة نجاح
-        document.getElementById('sendOfferMessageModal').classList.remove('active');
-        showNotification('تم إرسال الرسالة بنجاح! 📩');
-
-        console.log('✅ تم إرسال رسالة العرض:', offerMessage);
     }
 }
 
@@ -2401,6 +2434,11 @@ function showImageModal(imageSrc) {
 
 async function notifyNewMessage(recipientId) {
     try {
+        if (!recipientId || !currentUser) {
+            console.log('⚠️ بيانات غير مكتملة لإرسال الإشعار');
+            return;
+        }
+
         const notification = {
             recipientId: recipientId,
             senderId: currentUser.id,
@@ -2428,13 +2466,17 @@ async function notifyNewMessage(recipientId) {
 
         // إشعار فوري في الخادم أيضاً
         try {
-            await fetch(`${API_BASE_URL}/api/notify`, {
+            const response = await fetch(`${API_BASE_URL}/api/notify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(notification)
             });
+            
+            if (!response.ok) {
+                throw new Error('Server notification failed');
+            }
         } catch (serverError) {
             console.log('⚠️ فشل إرسال الإشعار للخادم:', serverError);
         }
@@ -2446,7 +2488,7 @@ async function notifyNewMessage(recipientId) {
 
         console.log(`📩 تم إرسال إشعار رسالة جديدة إلى المستخدم ${recipientId}`);
     } catch (error) {
-        console.error('خطأ في إرسال إشعار الرسالة:', error);
+        console.error('❌ خطأ في إرسال إشعار الرسالة:', error);
     }
 }
 
