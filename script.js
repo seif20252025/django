@@ -1,4 +1,3 @@
-
 // Global variables
 let currentUser = null;
 let offers = [];
@@ -54,7 +53,7 @@ function initializeMobileOptimizations() {
             e.target.style.transform = 'scale(0.95)';
         }
     });
-    
+
     document.addEventListener('touchend', function(e) {
         if (e.target.tagName === 'BUTTON' || e.target.classList.contains('action-btn') || 
             e.target.classList.contains('menu-btn') || e.target.classList.contains('submit-btn')) {
@@ -63,23 +62,23 @@ function initializeMobileOptimizations() {
             }, 100);
         }
     });
-    
+
     // تحسين النقر للأجهزة المحمولة
     const clickableElements = document.querySelectorAll('button, .action-btn, .menu-item, .auth-btn, .submit-btn');
     clickableElements.forEach(element => {
         element.style.cursor = 'pointer';
         element.style.touchAction = 'manipulation';
-        
+
         // إضافة تأثير بصري عند اللمس
         element.addEventListener('touchstart', function() {
             this.style.opacity = '0.8';
         });
-        
+
         element.addEventListener('touchend', function() {
             this.style.opacity = '1';
         });
     });
-    
+
     // تحسين إدخال النصوص للأجهزة المحمولة
     const inputs = document.querySelectorAll('input, textarea');
     inputs.forEach(input => {
@@ -89,7 +88,7 @@ function initializeMobileOptimizations() {
             }, 300);
         });
     });
-    
+
     console.log('✅ تم تطبيق تحسينات الأجهزة المحمولة');
 }
 
@@ -111,7 +110,7 @@ function initializeApp() {
 
     // Event listeners
     setupEventListeners();
-    
+
     // تتبع حالة المستخدم والكتابة
     setInterval(updateTypingStatus, 1000);
 }
@@ -321,7 +320,7 @@ function setupEventListeners() {
     document.getElementById('signupSubmitBtn').addEventListener('click', handleSignup);
     document.getElementById('showSignupBtn').addEventListener('click', showSignupForm);
     document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
-    
+
     // Enter key listeners
     document.getElementById('loginPassword').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') handleLogin();
@@ -372,7 +371,7 @@ function setupEventListeners() {
         closeSideMenu();
         joinDiscordServer();
     });
-    
+
     document.getElementById('marketBtn').addEventListener('click', () => {
         closeSideMenu();
         showMarketModal();
@@ -459,7 +458,7 @@ function setupEventListeners() {
             checkForNewMessages();
         }
     });
-    
+
     // فحص دوري للرسائل الجديدة
     setInterval(() => {
         if (currentUser) {
@@ -472,14 +471,14 @@ function setupEventListeners() {
 async function handleLogin() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
-    
+
     if (!email || !password) {
         showNotification('من فضلك املأ جميع الحقول', 'error');
         return;
     }
-    
+
     showLoading(true);
-    
+
     try {
         // محاولة تسجيل الدخول مع الخادم أولاً
         const response = await fetch(`${API_BASE_URL}/api/login`, {
@@ -489,10 +488,10 @@ async function handleLogin() {
             },
             body: JSON.stringify({ email, password })
         });
-        
+
         if (response.ok) {
             const result = await response.json();
-            
+
             if (result.success) {
                 currentUser = {
                     id: result.user.id,
@@ -501,7 +500,7 @@ async function handleLogin() {
                     avatar: result.user.avatar
                 };
                 localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-                userVexBalance = 0;
+                loadUserVexBalance();
                 await showMainPage();
                 showNotification('تم تسجيل الدخول بنجاح! 🎉');
                 return;
@@ -513,12 +512,12 @@ async function handleLogin() {
     } catch (error) {
         console.log('Server login failed, trying local authentication:', error);
     }
-    
+
     // في حالة فشل الخادم، استخدم التسجيل المحلي
     try {
         const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
         const user = savedUsers.find(u => u.email === email && u.password === password);
-        
+
         if (user) {
             currentUser = {
                 id: user.id,
@@ -527,7 +526,7 @@ async function handleLogin() {
                 avatar: user.avatar || 1
             };
             localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-            userVexBalance = 0;
+            loadUserVexBalance();
             await showMainPage();
             showNotification('تم تسجيل الدخول بنجاح! 🎉');
         } else {
@@ -546,31 +545,31 @@ async function handleSignup() {
     const name = document.getElementById('signupName').value.trim();
     const password = document.getElementById('signupPassword').value.trim();
     const confirmPassword = document.getElementById('signupConfirmPassword').value.trim();
-    
+
     // Validation
     if (!email || !name || !password || !confirmPassword) {
         showNotification('من فضلك املأ جميع الحقول', 'error');
         return;
     }
-    
+
     if (password !== confirmPassword) {
         showNotification('كلمتا المرور غير متطابقتين', 'error');
         return;
     }
-    
+
     if (password.length < 6) {
         showNotification('يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل', 'error');
         return;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         showNotification('من فضلك أدخل بريد إلكتروني صحيح', 'error');
         return;
     }
-    
+
     showLoading(true);
-    
+
     try {
         // محاولة التسجيل مع الخادم أولاً
         const response = await fetch(`${API_BASE_URL}/api/register`, {
@@ -580,10 +579,10 @@ async function handleSignup() {
             },
             body: JSON.stringify({ email, name, password })
         });
-        
+
         if (response.ok) {
             const result = await response.json();
-            
+
             if (result.success) {
                 currentUser = {
                     id: result.user.id,
@@ -592,7 +591,7 @@ async function handleSignup() {
                     avatar: result.user.avatar
                 };
                 localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-                userVexBalance = 0;
+                loadUserVexBalance();
                 await showMainPage();
                 showNotification('تم إنشاء الحساب بنجاح! 🎉');
                 return;
@@ -604,17 +603,17 @@ async function handleSignup() {
     } catch (error) {
         console.log('Server registration failed, trying local registration:', error);
     }
-    
+
     // في حالة فشل الخادم، استخدم التسجيل المحلي
     try {
         const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
-        
+
         // تحقق من وجود المستخدم
         if (savedUsers.find(u => u.email === email)) {
             showNotification('البريد الإلكتروني مستخدم بالفعل', 'error');
             return;
         }
-        
+
         // إنشاء مستخدم جديد
         const newUser = {
             id: Date.now(),
@@ -624,10 +623,10 @@ async function handleSignup() {
             avatar: Math.floor(Math.random() * 6) + 1,
             createdAt: new Date().toISOString()
         };
-        
+
         savedUsers.push(newUser);
         localStorage.setItem('gamesShopUsers', JSON.stringify(savedUsers));
-        
+
         currentUser = {
             id: newUser.id,
             name: newUser.name,
@@ -635,7 +634,7 @@ async function handleSignup() {
             avatar: newUser.avatar
         };
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-        userVexBalance = 0;
+        loadUserVexBalance();
         await showMainPage();
         showNotification('تم إنشاء الحساب بنجاح! 🎉');
     } catch (localError) {
@@ -650,11 +649,11 @@ function showSignupForm() {
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
     const loading = document.getElementById('authLoading');
-    
+
     loading.classList.add('hidden');
     loginForm.classList.add('hidden');
     signupForm.classList.remove('hidden');
-    
+
     // Clear any error messages or input values
     clearFormInputs();
 }
@@ -663,11 +662,11 @@ function showLoginForm() {
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
     const loading = document.getElementById('authLoading');
-    
+
     loading.classList.add('hidden');
     signupForm.classList.add('hidden');
     loginForm.classList.remove('hidden');
-    
+
     // Clear any error messages or input values
     clearFormInputs();
 }
@@ -676,7 +675,7 @@ function clearFormInputs() {
     // Clear login form
     document.getElementById('loginEmail').value = '';
     document.getElementById('loginPassword').value = '';
-    
+
     // Clear signup form
     document.getElementById('signupEmail').value = '';
     document.getElementById('signupName').value = '';
@@ -688,7 +687,7 @@ function showLoading(show) {
     const loading = document.getElementById('authLoading');
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
-    
+
     if (show) {
         loginForm.classList.add('hidden');
         signupForm.classList.add('hidden');
@@ -699,7 +698,7 @@ function showLoading(show) {
         // Check which form should be shown based on the current state
         const wasSignupVisible = !signupForm.classList.contains('hidden') || 
                                 (loginForm.classList.contains('hidden') && signupForm.classList.contains('hidden'));
-        
+
         if (wasSignupVisible) {
             signupForm.classList.remove('hidden');
             loginForm.classList.add('hidden');
@@ -742,7 +741,7 @@ async function showMainPage() {
             loadConversationsFromServer(); // تحديث المحادثات من الخادم
         }
     }, 1000); // فحص كل ثانية بدلاً من 3 ثوانٍ
-    
+
     console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
 }
 
@@ -806,7 +805,7 @@ function selectCurrency(currency) {
 function previewOfferImage() {
     const fileInput = document.getElementById('offerImage');
     const preview = document.getElementById('imagePreview');
-    
+
     if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -962,6 +961,7 @@ async function toggleLike(offerId) {
         try {
             const response = await fetch(`${API_BASE_URL}/api/offers/${offerId}/like`, {
                 method: 'POST',
+```text
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -1068,21 +1068,21 @@ function startChat(partnerName, partnerId) {
     }
 
     currentChatPartner = { name: partnerName, id: parseInt(partnerId) };
-    
+
     // تحديث عنوان المحادثة مع حالة المستخدم
     updateChatTitle();
-    
+
     document.getElementById('chatModal').classList.add('active');
-    
+
     // تحديث المحادثات وعرض الرسائل فوراً
     loadConversationsFromStorage();
     loadChatMessages();
-    
+
     // تحديث حالة المستخدم كمتصل
     updateUserOnlineStatus(currentUser.id, true);
-    
+
     console.log(`💬 بدء محادثة مع ${partnerName} (ID: ${partnerId})`);
-    
+
     // تحديث المحادثات من الخادم في الخلفية
     setTimeout(async () => {
         await loadConversationsFromServer();
@@ -1092,10 +1092,10 @@ function startChat(partnerName, partnerId) {
 
 function updateChatTitle() {
     if (!currentChatPartner) return;
-    
+
     const isOnline = userOnlineStatus[currentChatPartner.id] || false;
     const isTyping = typingUsers[currentChatPartner.id] || false;
-    
+
     let statusText = '';
     if (isTyping) {
         statusText = ' (Typing...)';
@@ -1104,7 +1104,7 @@ function updateChatTitle() {
     } else {
         statusText = ' (غير متصل)';
     }
-    
+
     document.getElementById('chatTitle').textContent = `مراسلة ${currentChatPartner.name}${statusText}`;
 }
 
@@ -1113,16 +1113,16 @@ function loadChatMessages() {
 
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
     console.log('🔄 تحميل رسائل المحادثة:', chatId);
-    
+
     // تحديث المحادثات من التخزين المحلي
     loadConversationsFromStorage();
-    
+
     // التأكد من وجود المحادثة
     if (!conversations[chatId]) {
         conversations[chatId] = [];
         console.log('📝 إنشاء محادثة جديدة:', chatId);
     }
-    
+
     const messages = conversations[chatId] || [];
     const container = document.getElementById('chatMessages');
 
@@ -1206,33 +1206,33 @@ async function sendMessage() {
 
     // إضافة الرسالة
     conversations[chatId].push(message);
-    
+
     // حفظ فوراً
     saveConversationsToStorage();
-    
+
     // عرض الرسالة فوراً
     loadChatMessages();
-    
+
     // مسح المدخل
     input.value = '';
-    
+
     // حفظ في الخادم
     const serverSaved = await saveConversationToServer(chatId, message);
-    
+
     // إرسال إشعار للمستخدم الآخر
     await notifyNewMessage(currentChatPartner.id);
-    
+
     // إشعار نجاح
     showNotification(`تم إرسال الرسالة إلى ${currentChatPartner.name} 📩`);
     console.log(`📩 تم إرسال رسالة إلى ${currentChatPartner.name}: "${text}"`);
-    
+
     // تحديث قائمة المحادثات
     loadMessagesList();
 }
 
 async function sendImageMessage() {
     const imageFile = document.getElementById('chatImage').files[0];
-    
+
     if (!imageFile || !currentChatPartner) {
         console.log('⚠️ لا يوجد صورة أو مستخدم للمراسلة');
         return;
@@ -1259,26 +1259,26 @@ async function sendImageMessage() {
 
         // إضافة الرسالة
         conversations[chatId].push(message);
-        
+
         // حفظ فوراً
         saveConversationsToStorage();
-        
+
         // عرض الرسالة فوراً
         loadChatMessages();
-        
+
         // مسح اختيار الملف
         document.getElementById('chatImage').value = '';
-        
+
         // حفظ في الخادم
         const serverSaved = await saveConversationToServer(chatId, message);
-        
+
         // إرسال إشعار للمستخدم الآخر
         await notifyNewMessage(currentChatPartner.id);
-        
+
         // إشعار نجاح
         showNotification(`تم إرسال صورة إلى ${currentChatPartner.name} 📸`);
         console.log(`📸 تم إرسال صورة إلى ${currentChatPartner.name}`);
-        
+
         // تحديث قائمة المحادثات
         loadMessagesList();
     };
@@ -1292,13 +1292,13 @@ function showImageModal(imageSrc) {
         <img src="${imageSrc}" alt="صورة مكبرة">
         <span class="image-modal-close">&times;</span>
     `;
-    
+
     modal.addEventListener('click', function(e) {
         if (e.target === modal || e.target.className === 'image-modal-close') {
             modal.remove();
         }
     });
-    
+
     document.body.appendChild(modal);
 }
 
@@ -1311,29 +1311,29 @@ function notifyNewMessage(recipientId) {
             timestamp: new Date().toISOString(),
             id: Date.now() + Math.random()
         };
-        
+
         // تحديث الإشعار الفوري
         localStorage.setItem('newMessageNotification', JSON.stringify(notification));
-        
+
         // حفظ الإشعارات بشكل دائم
         const existingNotifications = JSON.parse(localStorage.getItem('messageNotifications') || '[]');
         existingNotifications.push(notification);
-        
+
         // الاحتفاظ بآخر 100 إشعار فقط
         if (existingNotifications.length > 100) {
             existingNotifications.splice(0, existingNotifications.length - 100);
         }
-        
+
         localStorage.setItem('messageNotifications', JSON.stringify(existingNotifications));
-        
+
         // تحديث إشعار المراسلات فوراً للمرسل
         updateMessageBadge();
-        
+
         // إزالة الإشعار الفوري بعد ثانية واحدة
         setTimeout(() => {
             localStorage.removeItem('newMessageNotification');
         }, 1000);
-        
+
         console.log(`📩 تم إرسال إشعار رسالة جديدة إلى المستخدم ${recipientId}`);
     } catch (error) {
         console.error('خطأ في إرسال إشعار الرسالة:', error);
@@ -1348,7 +1348,7 @@ function getChatId(userId1, userId2) {
 function updateUserOnlineStatus(userId, isOnline) {
     userOnlineStatus[userId] = isOnline;
     localStorage.setItem('userOnlineStatus', JSON.stringify(userOnlineStatus));
-    
+
     // تحديث عنوان المحادثة إذا كان المستخدم في محادثة
     if (currentChatPartner && currentChatPartner.id === userId) {
         updateChatTitle();
@@ -1358,15 +1358,15 @@ function updateUserOnlineStatus(userId, isOnline) {
 // تتبع الكتابة
 function startTyping() {
     if (!currentChatPartner) return;
-    
+
     typingUsers[currentUser.id] = true;
     localStorage.setItem('typingUsers', JSON.stringify(typingUsers));
-    
+
     // إيقاف تتبع الكتابة بعد 3 ثوانٍ
     if (typingTimeout) {
         clearTimeout(typingTimeout);
     }
-    
+
     typingTimeout = setTimeout(() => {
         stopTyping();
     }, 3000);
@@ -1374,10 +1374,10 @@ function startTyping() {
 
 function stopTyping() {
     if (!currentChatPartner) return;
-    
+
     typingUsers[currentUser.id] = false;
     localStorage.setItem('typingUsers', JSON.stringify(typingUsers));
-    
+
     if (typingTimeout) {
         clearTimeout(typingTimeout);
         typingTimeout = null;
@@ -1387,13 +1387,13 @@ function stopTyping() {
 // تحديث حالة الكتابة للمستخدم الآخر
 function updateTypingStatus() {
     const savedTypingUsers = JSON.parse(localStorage.getItem('typingUsers') || '{}');
-    
+
     Object.keys(savedTypingUsers).forEach(userId => {
         if (userId !== currentUser.id.toString()) {
             typingUsers[parseInt(userId)] = savedTypingUsers[userId];
         }
     });
-    
+
     // تحديث عنوان المحادثة
     if (currentChatPartner) {
         updateChatTitle();
@@ -1755,7 +1755,7 @@ function closeBalanceModal() {
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     const isError = type === 'error';
-    
+
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -1772,16 +1772,16 @@ function showNotification(message, type = 'success') {
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
     `;
-    
+
     notification.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
             <i class="fas fa-${isError ? 'exclamation-circle' : 'check-circle'}"></i>
             <span>${message}</span>
         </div>
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => {
@@ -1795,7 +1795,7 @@ function showNotification(message, type = 'success') {
 // Member management
 function registerMember() {
     if (!currentUser) return;
-    
+
     const existingMember = registeredMembers.find(member => member.id === currentUser.id);
     if (!existingMember) {
         registeredMembers.push({
@@ -1851,7 +1851,7 @@ function loadMembersList() {
 
 function showSecurityWarning(callback) {
     document.getElementById('securityWarningModal').classList.add('active');
-    
+
     document.getElementById('agreeWarning').onclick = function() {
         document.getElementById('securityWarningModal').classList.remove('active');
         if (callback) callback();
@@ -1860,14 +1860,14 @@ function showSecurityWarning(callback) {
 
 function checkForNewMessages() {
     if (!currentUser) return;
-    
+
     const userChats = Object.keys(conversations).filter(chatId => 
         chatId.includes(currentUser.id.toString())
     );
 
     let hasNew = false;
     let unreadCount = 0;
-    
+
     userChats.forEach(chatId => {
         const messages = conversations[chatId];
         if (messages && messages.length > 0) {
@@ -1906,8 +1906,7 @@ function showMessageNotification(count = 1) {
         badge.style.background = '#ff4757';
         badge.style.animation = 'pulse 1s infinite';
     }
-}
-
+```text
 function clearMessageNotification() {
     const badge = document.getElementById('messageNotification');
     if (badge) {
@@ -1925,7 +1924,7 @@ function updateMessageBadge() {
 function initializeAds() {
     // Initialize all AdSense ads on the page
     const adsenseElements = document.querySelectorAll('.adsbygoogle');
-    
+
     adsenseElements.forEach((ad, index) => {
         try {
             if (window.adsbygoogle && !ad.hasAttribute('data-adsbygoogle-status')) {
@@ -1938,13 +1937,13 @@ function initializeAds() {
             console.log(`⚠️ خطأ في تحميل الإعلان ${index + 1}:`, e);
         }
     });
-    
+
     // إعادة تحميل الإعلانات كل 5 دقائق (300000 ميلي ثانية)
     setInterval(() => {
         refreshAds();
         showWelcomeAd(); // إظهار إعلان ترحيبي كل 5 دقائق
     }, 300000);
-    
+
     // إظهار إعلان ترحيبي عند دخول الموقع
     setTimeout(() => {
         showWelcomeAd();
@@ -1992,9 +1991,9 @@ function showWelcomeAd() {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(adModal);
-    
+
     // تحميل الإعلان
     try {
         (adsbygoogle = window.adsbygoogle || []).push({});
@@ -2002,7 +2001,7 @@ function showWelcomeAd() {
     } catch (e) {
         console.log('خطأ في تحميل الإعلان الترحيبي:', e);
     }
-    
+
     // إغلاق الإعلان تلقائياً بعد 10 ثوانٍ
     setTimeout(() => {
         closeAdModal();
@@ -2013,5 +2012,22 @@ function closeAdModal() {
     const adModal = document.querySelector('.ad-modal');
     if (adModal) {
         adModal.remove();
+    }
+}
+
+// Load user's Vex balance
+async function loadUserVexBalance() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/vex/${currentUser.id}`);
+        if (response.ok) {
+            const data = await response.json();
+            userVexBalance = data.vexBalance || 0;
+            updateVexDisplay();
+            console.log(`✅ تم تحميل رصيد Vex: ${userVexBalance}`);
+        } else {
+            console.log('⚠️ فشل تحميل رصيد Vex');
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل رصيد Vex:', error);
     }
 }

@@ -1709,6 +1709,181 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
     box-shadow: 0 8px 20px rgba(0, 255, 128, 0.6);
 }
 
+/* User Info Section */
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.user-rank {
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    color: #000;
+    padding: 0.2rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+}
+
+.user-rank.admin {
+    background: linear-gradient(45deg, #ff4757, #ff3742);
+    color: white;
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+}
+
+/* Admin Controls */
+.admin-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-btn {
+    padding: 0.6rem 1rem;
+    background: linear-gradient(45deg, #ff4757, #ff3742);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: bold;
+    box-shadow: 0 3px 10px rgba(255, 71, 87, 0.3);
+}
+
+.admin-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 71, 87, 0.5);
+}
+
+/* Support Message Button */
+.support-message-btn {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(45deg, #00ff80, #00cc66);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+    box-shadow: 0 5px 15px rgba(0, 255, 128, 0.3);
+}
+
+.support-message-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 255, 128, 0.5);
+}
+
+/* Avatar Selection Tabs */
+.avatar-selection-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.avatar-tab {
+    flex: 1;
+    padding: 0.8rem;
+    background: rgba(0, 191, 255, 0.2);
+    border: 2px solid #00bfff;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.avatar-tab.active {
+    background: linear-gradient(45deg, #00bfff, #004e92);
+    box-shadow: 0 3px 10px rgba(0, 191, 255, 0.3);
+}
+
+.avatar-container {
+    margin-top: 1rem;
+}
+
+.custom-avatar-preview {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.custom-avatar-preview img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid #00bfff;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+}
+
+/* Admin Action Buttons */
+.admin-action-btn {
+    width: 100%;
+    padding: 1.2rem;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+    background: linear-gradient(45deg, #00ff80, #00cc66);
+    box-shadow: 0 5px 15px rgba(0, 255, 128, 0.4);
+}
+
+.admin-action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 255, 128, 0.6);
+}
+
+.admin-action-btn.ban-btn {
+    background: linear-gradient(45deg, #ff4757, #ff3742);
+    box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+}
+
+.admin-action-btn.ban-btn:hover {
+    box-shadow: 0 8px 20px rgba(255, 71, 87, 0.6);
+}
+
+/* Ban Warning Styles */
+.ban-warning {
+    text-align: center;
+    padding: 2rem;
+}
+
+.ban-warning h4 {
+    color: #ff4757;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.ban-warning p {
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+#banTimeRemaining {
+    color: #ff4757;
+    font-weight: bold;
+}
+
+/* Admin Delete Button for Offers */
+.admin-delete-btn {
+    background: linear-gradient(45deg, #ffffff, #f0f0f0);
+    color: #000;
+    border: 2px solid #ddd;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.admin-delete-btn:hover {
+    background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
 /* Members Modal */
 .members-list {
     display: grid;

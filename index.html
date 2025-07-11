@@ -62,10 +62,17 @@
                 </div>
                 <div class="user-section">
                     <img id="userAvatar" src="" alt="صورة المستخدم" class="user-avatar">
-                    <span id="userName" class="user-name"></span>
+                    <div class="user-info">
+                        <span id="userName" class="user-name"></span>
+                        <span id="userRank" class="user-rank">Member👤</span>
+                    </div>
                     <div class="vex-balance">
                         <div class="vex-icon">Vex</div>
                         <span id="userVexBalance" class="vex-amount">0</span>
+                    </div>
+                    <div id="adminControls" class="admin-controls hidden">
+                        <button id="adminVexBtn" class="admin-btn">VEX💰</button>
+                        <button id="adminBanBtn" class="admin-btn">طرد🚫</button>
                     </div>
                     <button id="updatesBtn" class="updates-btn">التحديثات📢</button>
                     <button id="menuBtn" class="menu-btn">Menu🕹️</button>
@@ -232,13 +239,23 @@
                     </div>
                     <div class="form-group">
                         <label>الصورة</label>
-                        <div class="avatar-options">
-                            <img src="https://i.pravatar.cc/150?img=1" class="avatar-option" data-avatar="1">
-                            <img src="https://i.pravatar.cc/150?img=2" class="avatar-option" data-avatar="2">
-                            <img src="https://i.pravatar.cc/150?img=3" class="avatar-option" data-avatar="3">
-                            <img src="https://i.pravatar.cc/150?img=4" class="avatar-option" data-avatar="4">
-                            <img src="https://i.pravatar.cc/150?img=5" class="avatar-option" data-avatar="5">
-                            <img src="https://i.pravatar.cc/150?img=6" class="avatar-option" data-avatar="6">
+                        <div class="avatar-selection-tabs">
+                            <button id="defaultAvatarsTab" class="avatar-tab active">الصور الافتراضية</button>
+                            <button id="customAvatarTab" class="avatar-tab">صورة من المعرض</button>
+                        </div>
+                        <div id="defaultAvatarsContainer" class="avatar-container">
+                            <div class="avatar-options">
+                                <img src="https://i.pravatar.cc/150?img=1" class="avatar-option" data-avatar="1">
+                                <img src="https://i.pravatar.cc/150?img=2" class="avatar-option" data-avatar="2">
+                                <img src="https://i.pravatar.cc/150?img=3" class="avatar-option" data-avatar="3">
+                                <img src="https://i.pravatar.cc/150?img=4" class="avatar-option" data-avatar="4">
+                                <img src="https://i.pravatar.cc/150?img=5" class="avatar-option" data-avatar="5">
+                                <img src="https://i.pravatar.cc/150?img=6" class="avatar-option" data-avatar="6">
+                            </div>
+                        </div>
+                        <div id="customAvatarContainer" class="avatar-container hidden">
+                            <input type="file" id="customAvatarInput" accept="image/*" class="form-control">
+                            <div id="customAvatarPreview" class="custom-avatar-preview hidden"></div>
                         </div>
                     </div>
                     <button id="saveProfile" class="submit-btn">تم</button>
@@ -323,6 +340,7 @@
                         <div class="support-message-box">
                             اضغط على زر مراسلة لو تريد الاستفسار أو مشكلة موجودة و اكتب المشكلة
                         </div>
+                        <button id="supportMessageBtn" class="support-message-btn">مراسلة الدعم الفني💬</button>
                     </div>
                 </div>
             </div>
@@ -494,6 +512,66 @@
                 <div class="modal-body">
                     <div id="membersList" class="members-list">
                         <!-- Members will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin VEX Modal -->
+        <div id="adminVexModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>إدارة VEX💰</h3>
+                    <button class="close-modal" onclick="closeModal('adminVexModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>البريد الإلكتروني للمستخدم</label>
+                        <input type="email" id="vexUserEmail" class="form-control" placeholder="أدخل الإيميل">
+                    </div>
+                    <div class="form-group">
+                        <label>مقدار VEX المراد إضافته</label>
+                        <input type="number" id="vexAmount" class="form-control" placeholder="أدخل المقدار" min="1">
+                    </div>
+                    <button id="giveVexBtn" class="admin-action-btn">إضافة VEX✅</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Ban Modal -->
+        <div id="adminBanModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>طرد مستخدم🚫</h3>
+                    <button class="close-modal" onclick="closeModal('adminBanModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>اسم المستخدم</label>
+                        <input type="text" id="banUserName" class="form-control" placeholder="أدخل اسم المستخدم">
+                    </div>
+                    <div class="form-group">
+                        <label>مدة الطرد (بالساعات)</label>
+                        <input type="number" id="banDuration" class="form-control" placeholder="أدخل عدد الساعات" min="1">
+                    </div>
+                    <button id="banUserBtn" class="admin-action-btn ban-btn">طرد المستخدم🚫</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ban Warning Modal -->
+        <div id="banWarningModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>تحذير - مستخدم مطرود⚠️</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="ban-warning">
+                        <i class="fas fa-ban warning-icon"></i>
+                        <h4>تم طردك من الموقع مؤقتاً</h4>
+                        <p id="banMessage">وقت انتهاء الطرد: <span id="banEndTime"></span></p>
+                        <p>الوقت المتبقي: <span id="banTimeRemaining"></span></p>
+                        <button id="closeBanWarning" class="agree-btn">موافق</button>
                     </div>
                 </div>
             </div>
