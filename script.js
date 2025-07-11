@@ -200,26 +200,47 @@ async function loadConversationsFromServer() {
         const response = await fetch(`${API_BASE_URL}/api/conversations/${currentUser.id}`);
         if (response.ok) {
             const serverConversations = await response.json();
+            let hasNewMessages = false;
+            
             // دمج المحادثات من الخادم مع المحادثات المحلية
             Object.keys(serverConversations).forEach(chatId => {
                 if (!conversations[chatId]) {
                     conversations[chatId] = [];
                 }
+                
+                const beforeCount = conversations[chatId].length;
+                
                 // إضافة الرسائل الجديدة فقط
                 serverConversations[chatId].forEach(serverMessage => {
                     const exists = conversations[chatId].some(localMessage => 
                         localMessage.timestamp === serverMessage.timestamp && 
-                        localMessage.senderId === serverMessage.senderId
+                        localMessage.senderId === serverMessage.senderId &&
+                        localMessage.text === serverMessage.text
                     );
                     if (!exists) {
                         conversations[chatId].push(serverMessage);
+                        hasNewMessages = true;
                     }
                 });
+                
                 // ترتيب الرسائل حسب الوقت
                 conversations[chatId].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                // إذا كان هناك رسائل جديدة وكان المستخدم في هذه المحادثة، حدث العرض
+                if (hasNewMessages && currentChatPartner && getChatId(currentUser.id, currentChatPartner.id) === chatId) {
+                    loadChatMessages();
+                }
             });
-            saveConversationsToStorage();
-            console.log('✅ تم تحميل ودمج المحادثات من الخادم');
+            
+            if (hasNewMessages) {
+                saveConversationsToStorage();
+                console.log('✅ تم تحميل رسائل جديدة من الخادم');
+                
+                // تحديث قائمة المحادثات إذا كانت مفتوحة
+                if (document.getElementById('messagesModal').classList.contains('active')) {
+                    loadMessagesList();
+                }
+            }
         }
     } catch (error) {
         console.log('⚠️ فشل تحميل المحادثات من الخادم:', error);
@@ -1066,7 +1087,7 @@ async function showMainPage() {
             checkForNewMessages();
             loadConversationsFromServer(); // تحديث المحادثات من الخادم
         }
-    }, 5000); // فحص كل 5 ثوانٍ لتقليل الضغط على الخادم
+    }, 1000); // فحص كل ثانية للتحديث الفوري
 
     console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
 }
@@ -1413,11 +1434,23 @@ function startChat(partnerName, partnerId) {
 
     console.log(`💬 بدء محادثة مع ${partnerName} (ID: ${partnerId})`);
 
-    // تحديث المحادثات من الخادم في الخلفية
-    setTimeout(async () => {
-        await loadConversationsFromServer();
+    // تحديث فوري من الخادم
+    loadConversationsFromServer().then(() => {
         loadChatMessages();
-    }, 500);
+    });
+
+    // إعداد تحديث دوري سريع للمحادثة المفتوحة
+    if (window.chatUpdateInterval) {
+        clearInterval(window.chatUpdateInterval);
+    }
+    
+    window.chatUpdateInterval = setInterval(async () => {
+        if (currentChatPartner && document.getElementById('chatModal').classList.contains('active')) {
+            await loadConversationsFromServer();
+        } else {
+            clearInterval(window.chatUpdateInterval);
+        }
+    }, 2000); // تحديث كل ثانيتين للمحادثة المفتوحة
 }
 
 function updateChatTitle() {
@@ -1534,30 +1567,36 @@ async function sendMessage() {
         conversations[chatId] = [];
     }
 
-    // إضافة الرسالة
+    // إضافة الرسالة محلياً أولاً
     conversations[chatId].push(message);
-
-    // حفظ فوراً
     saveConversationsToStorage();
 
-    // عرض الرسالة فوراً
+    // عرض الرسالة فوراً للمرسل
     loadChatMessages();
 
     // مسح المدخل
     input.value = '';
 
-    // حفظ في الخادم
-    const serverSaved = await saveConversationToServer(chatId, message);
-
-    // إرسال إشعار للمستخدم الآخر
-    await notifyNewMessage(currentChatPartner.id);
-
-    // إشعار نجاح
-    showNotification(`تم إرسال الرسالة إلى ${currentChatPartner.name} 📩`);
-    console.log(`📩 تم إرسال رسالة إلى ${currentChatPartner.name}: "${text}"`);
-
-    // تحديث قائمة المحادثات
-    loadMessagesList();
+    // حفظ في الخادم والإشعار
+    try {
+        const serverSaved = await saveConversationToServer(chatId, message);
+        await notifyNewMessage(currentChatPartner.id);
+        
+        // إشعار نجاح
+        console.log(`📩 تم إرسال رسالة إلى ${currentChatPartner.name}: "${text}"`);
+        
+        // تحديث فوري للمحادثات على الخادم
+        setTimeout(async () => {
+            await loadConversationsFromServer();
+            if (document.getElementById('messagesModal').classList.contains('active')) {
+                loadMessagesList();
+            }
+        }, 500);
+        
+    } catch (error) {
+        console.error('خطأ في إرسال الرسالة:', error);
+        showNotification('حدث خطأ في إرسال الرسالة', 'error');
+    }
 }
 
 async function sendImageMessage() {
@@ -1632,7 +1671,7 @@ function showImageModal(imageSrc) {
     document.body.appendChild(modal);
 }
 
-function notifyNewMessage(recipientId) {
+async function notifyNewMessage(recipientId) {
     try {
         const notification = {
             recipientId: recipientId,
@@ -1658,6 +1697,19 @@ function notifyNewMessage(recipientId) {
 
         // تحديث إشعار المراسلات فوراً للمرسل
         updateMessageBadge();
+
+        // إشعار فوري في الخادم أيضاً
+        try {
+            await fetch(`${API_BASE_URL}/api/notify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(notification)
+            });
+        } catch (serverError) {
+            console.log('⚠️ فشل إرسال الإشعار للخادم:', serverError);
+        }
 
         // إزالة الإشعار الفوري بعد ثانية واحدة
         setTimeout(() => {

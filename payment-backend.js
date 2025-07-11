@@ -402,6 +402,18 @@ app.get('/api/debug/conversations', (req, res) => {
     });
 });
 
+// Notification endpoint for instant messaging
+app.post('/api/notify', (req, res) => {
+    try {
+        const notification = req.body;
+        console.log(`🔔 إشعار رسالة جديدة من ${notification.senderName} إلى ${notification.recipientId}`);
+        res.json({ success: true, message: 'Notification sent' });
+    } catch (error) {
+        console.error('Error sending notification:', error);
+        res.status(500).json({ success: false, error: 'Failed to send notification' });
+    }
+});
+
 // Start server
 app.listen(port, '0.0.0.0', () => {
     console.log(`🎮 GAMES SHOP Server running on http://0.0.0.0:${port}`);
