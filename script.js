@@ -628,16 +628,48 @@ function setupEventListeners() {
         } else if (e.key === 'gamesShopConversations') {
             loadConversationsFromStorage();
             checkForNewMessages();
+        } else if (e.key === 'instantMessageUpdate' && e.newValue) {
+            try {
+                const update = JSON.parse(e.newValue);
+                if (update && update.type === 'newMessage') {
+                    // تحديث المحادثات فوراً
+                    loadConversationsFromStorage();
+                    
+                    // إذا كانت المحادثة مفتوحة، حدثها
+                    if (currentChatPartner && document.getElementById('chatModal').classList.contains('active')) {
+                        loadChatMessages();
+                    }
+                    
+                    // إذا كانت قائمة المحادثات مفتوحة، حدثها
+                    if (document.getElementById('messagesModal').classList.contains('active')) {
+                        loadMessagesList();
+                    }
+                    
+                    console.log('⚡ تم التحديث الفوري للرسائل');
+                }
+            } catch (error) {
+                console.error('خطأ في التحديث الفوري:', error);
+            }
         }
     });
 
-    // فحص دوري للرسائل الجديدة
-    setInterval(() => {
+    // فحص دوري للرسائل الجديدة مع التحديث الفوري
+    setInterval(async () => {
         if (currentUser) {
+            await loadConversationsFromServer(); // تحديث المحادثات من الخادم
             checkForNewMessages();
-            loadConversationsFromServer(); // تحديث المحادثات من الخادم
+            
+            // إذا كانت هناك محادثة مفتوحة، حدثها
+            if (currentChatPartner && document.getElementById('chatModal').classList.contains('active')) {
+                loadChatMessages();
+            }
+            
+            // إذا كانت قائمة المحادثات مفتوحة، حدثها
+            if (document.getElementById('messagesModal').classList.contains('active')) {
+                loadMessagesList();
+            }
         }
-    }, 2000); // كل ثانيتين
+    }, 1000); // كل ثانية للتحديث السريع
 
     // Profile avatar tabs
     document.getElementById('defaultAvatarsTab').addEventListener('click', () => {
@@ -1432,6 +1464,72 @@ function showAllOffers() {
     loadOffersFromGlobalStorage();
 }
 
+// دالة مزامنة المحادثات مع الخادم
+async function syncConversationsWithServer() {
+    if (!currentUser) return;
+
+    try {
+        // تحديث المحادثات من الخادم
+        await loadConversationsFromServer();
+        
+        // إرسال المحادثات المحلية للخادم
+        const localConversations = JSON.parse(localStorage.getItem('gamesShopConversations') || '{}');
+        
+        for (const chatId in localConversations) {
+            if (chatId.includes(currentUser.id.toString())) {
+                const messages = localConversations[chatId];
+                for (const message of messages) {
+                    if (message.senderId === currentUser.id) {
+                        await saveConversationToServer(chatId, message);
+                    }
+                }
+            }
+        }
+        
+        console.log('🔄 تم مزامنة المحادثات مع الخادم');
+    } catch (error) {
+        console.error('خطأ في مزامنة المحادثات:', error);
+    }
+}
+
+// دالة تحديث الرسائل الفورية للطرفين
+async function syncMessagesForBothUsers(chatId, message) {
+    try {
+        // حفظ الرسالة في الخادم
+        await saveConversationToServer(chatId, message);
+        
+        // إرسال إشعار فوري للطرف الآخر
+        const userIds = chatId.split('-').map(id => parseInt(id));
+        const otherUserId = userIds.find(id => id !== currentUser.id);
+        
+        if (otherUserId) {
+            await notifyNewMessage(otherUserId);
+            
+            // تحديث فوري للمحادثات
+            await loadConversationsFromServer();
+            
+            // إرسال إشعار عبر localStorage للتحديث الفوري
+            const instantUpdate = {
+                type: 'newMessage',
+                chatId: chatId,
+                message: message,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('instantMessageUpdate', JSON.stringify(instantUpdate));
+            
+            // إزالة الإشعار بعد ثانية
+            setTimeout(() => {
+                localStorage.removeItem('instantMessageUpdate');
+            }, 1000);
+        }
+        
+        console.log('📨 تم مزامنة الرسالة للطرفين');
+    } catch (error) {
+        console.error('خطأ في مزامنة الرسالة:', error);
+    }
+}
+
 // تحديث تلقائي للعروض كل 30 ثانية
 setInterval(async () => {
     if (currentUser) {
@@ -1491,7 +1589,7 @@ function startChat(partnerName, partnerId) {
         } else {
             clearInterval(window.chatUpdateInterval);
         }
-    }, 1500); // تحديث كل ثانية ونصف للمحادثة المفتوحة
+    }, 1000); // تحديث كل ثانية للمحادثة المفتوحة
 }
 
 function updateChatTitle() {
@@ -1573,7 +1671,11 @@ function loadChatMessages() {
             messageContent = `<div class="message-text">${message.text}</div>`;
         }
 
+        // إضافة اسم المرسل للرسائل الواردة
+        const senderName = isSent ? '' : `<div class="sender-name">${message.senderName || currentChatPartner.name}</div>`;
+
         messageDiv.innerHTML = `
+            ${senderName}
             ${messageContent}
             ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
@@ -1642,7 +1744,12 @@ async function sendMessage() {
             if (document.getElementById('messagesModal').classList.contains('active')) {
                 loadMessagesList();
             }
-        }, 500);
+        }, 100);
+
+        // تحديث إضافي للتأكد من وصول الرسالة
+        setTimeout(async () => {
+            await syncConversationsWithServer();
+        }, 1000);
 
     } catch (error) {
         console.error('خطأ في إرسال الرسالة:', error);
