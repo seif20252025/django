@@ -465,6 +465,150 @@ function setupEventListeners() {
             checkForNewMessages();
         }
     }, 1000); // كل ثانية
+
+    // Profile avatar tabs
+    document.getElementById('defaultAvatarsTab').addEventListener('click', () => {
+        document.getElementById('defaultAvatarsTab').classList.add('active');
+        document.getElementById('customAvatarTab').classList.remove('active');
+        document.getElementById('defaultAvatarsContainer').classList.remove('hidden');
+        document.getElementById('customAvatarContainer').classList.add('hidden');
+    });
+
+    document.getElementById('customAvatarTab').addEventListener('click', () => {
+        document.getElementById('customAvatarTab').classList.add('active');
+        document.getElementById('defaultAvatarsTab').classList.remove('active');
+        document.getElementById('customAvatarContainer').classList.remove('hidden');
+        document.getElementById('defaultAvatarsContainer').classList.add('hidden');
+    });
+
+    // Custom avatar upload
+    document.getElementById('customAvatarInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('customAvatarPreview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="صورة مخصصة" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">`;
+                preview.classList.remove('hidden');
+                selectedAvatar = e.target.result; // Set custom image as selected avatar
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Support message button
+    document.getElementById('supportMessageBtn').addEventListener('click', () => {
+        closeSideMenu();
+        closeModal('supportModal');
+        // Contact admin (you can customize this)
+        startChat('سيف (الدعم الفني)', 1752208985206); // Admin user ID
+    });
+
+    // Admin controls event listeners
+    if (currentUser && currentUser.email === 'seifelpa2020@gmail.com') {
+        const adminControls = document.getElementById('adminControls');
+        const userRank = document.getElementById('userRank');
+
+        if (adminControls) {
+            adminControls.classList.remove('hidden');
+        }
+
+        if (userRank) {
+            userRank.textContent = 'Admin';
+            userRank.style.color = '#ffd700';
+        }
+
+        // VEX management
+        document.getElementById('adminVexBtn').addEventListener('click', () => {
+            document.getElementById('adminVexModal').classList.add('active');
+        });
+
+        document.getElementById('giveVexBtn').addEventListener('click', async () => {
+            const email = document.getElementById('vexUserEmail').value.trim();
+            const amount = parseInt(document.getElementById('vexAmount').value);
+
+            if (!email || !amount || amount < 1) {
+                showNotification('من فضلك أدخل بريد إلكتروني صحيح ومقدار VEX صالح', 'error');
+                return;
+            }
+
+            // Find user by email
+            const targetUser = registeredMembers.find(user => user.email === email);
+            if (!targetUser) {
+                showNotification('لم يتم العثور على مستخدم بهذا البريد الإلكتروني', 'error');
+                return;
+            }
+
+            // Give VEX (simulate API call)
+            try {
+                // Simulate API call to update VEX balance
+                // In a real application, you would send a request to your server
+                // and update the user's balance in the database.
+                // This is a client-side simulation only.
+                const currentVex = parseInt(localStorage.getItem(`vex_${targetUser.id}`) || '0');
+                const newVex = currentVex + amount;
+                localStorage.setItem(`vex_${targetUser.id}`, newVex.toString());
+
+                showNotification(`تم إضافة ${amount} VEX إلى حساب ${targetUser.name} بنجاح ✅`);
+
+                // Clear form
+                document.getElementById('vexUserEmail').value = '';
+                document.getElementById('vexAmount').value = '';
+                document.getElementById('adminVexModal').classList.remove('active');
+
+            } catch (error) {
+                showNotification('حدث خطأ في إضافة VEX', 'error');
+            }
+        });
+
+        // Ban management
+        document.getElementById('adminBanBtn').addEventListener('click', () => {
+            document.getElementById('adminBanModal').classList.add('active');
+        });
+
+        document.getElementById('banUserBtn').addEventListener('click', async () => {
+            const userName = document.getElementById('banUserName').value.trim();
+            const duration = parseInt(document.getElementById('banDuration').value);
+
+            if (!userName || !duration || duration < 1) {
+                showNotification('من فضلك أدخل اسم المستخدم ومدة الطرد', 'error');
+                return;
+            }
+
+            // Find user by name
+            const targetUser = registeredMembers.find(user => user.name === userName);
+            if (!targetUser) {
+                showNotification('لم يتم العثور على مستخدم بهذا الاسم', 'error');
+                return;
+            }
+
+            // Ban user
+            try {
+                const banEndTime = new Date(Date.now() + duration * 60 * 60 * 1000); // hours to milliseconds
+                localStorage.setItem(`ban_${targetUser.id}`, banEndTime.toISOString());
+
+                showNotification(`تم طرد ${userName} لمدة ${duration} ساعة ✅`);
+
+                // Clear form
+                document.getElementById('banUserName').value = '';
+                document.getElementById('banDuration').value = '';
+                document.getElementById('adminBanModal').classList.remove('active');
+
+            } catch (error) {
+                showNotification('حدث خطأ في طرد المستخدم', 'error');
+            }
+        });
+
+        // Delete offer buttons for admin
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('admin-delete-btn')) {
+                const offerId = parseInt(e.target.dataset.offerId);
+                if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
+                    deleteOffer(offerId);
+                }
+            }
+        });
+    }
 }
 
 // Auth functionality
@@ -530,10 +674,10 @@ async function handleLogin() {
 
         // في حالة فشل الخادم، استخدم التسجيل المحلي
         const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
-        
+
         // البحث عن المستخدم بالبريد الإلكتروني أولاً
         const userByEmail = savedUsers.find(u => u.email === email);
-        
+
         if (!userByEmail) {
             showNotification('البريد الإلكتروني غير مسجل، يرجى إنشاء حساب جديد', 'error');
             return;
@@ -552,12 +696,12 @@ async function handleLogin() {
             email: userByEmail.email,
             avatar: userByEmail.avatar || 1
         };
-        
+
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
         loadUserVexBalance();
         await showMainPage();
         showNotification('تم تسجيل الدخول بنجاح! 🎉');
-        
+
     } catch (error) {
         console.error('Login error:', error);
         showNotification('حدث خطأ في تسجيل الدخول، يرجى المحاولة مرة أخرى', 'error');
@@ -812,6 +956,7 @@ function showCurrencyOptions() {
     document.getElementById('otherBtn').classList.remove('active');
 }
 
+```python
 function showAccountInput() {
     document.getElementById('accountInput').classList.remove('hidden');
     document.getElementById('currencyOptions').classList.add('hidden');
@@ -987,7 +1132,6 @@ async function toggleLike(offerId) {
         try {
             const response = await fetch(`${API_BASE_URL}/api/offers/${offerId}/like`, {
                 method: 'POST',
-```text
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -1932,7 +2076,8 @@ function showMessageNotification(count = 1) {
         badge.style.background = '#ff4757';
         badge.style.animation = 'pulse 1s infinite';
     }
-```text
+}
+
 function clearMessageNotification() {
     const badge = document.getElementById('messageNotification');
     if (badge) {
