@@ -147,9 +147,18 @@ function initializeApp() {
         const savedUser = localStorage.getItem('gamesShopUser');
         if (savedUser) {
             try {
-                currentUser = JSON.parse(savedUser);
-                showMainPage();
-                console.log('✅ تم تسجيل دخول المستخدم تلقائياً');
+                const userData = JSON.parse(savedUser);
+                
+                // التحقق من صحة بيانات المستخدم
+                if (userData && userData.id && userData.name && userData.email) {
+                    currentUser = userData;
+                    showMainPage();
+                    console.log('✅ تم تسجيل دخول المستخدم تلقائياً:', currentUser.name);
+                } else {
+                    console.log('⚠️ بيانات المستخدم غير مكتملة، إعادة توجيه لتسجيل الدخول');
+                    localStorage.removeItem('gamesShopUser');
+                    showLoginPage();
+                }
             } catch (error) {
                 console.error('خطأ في بيانات المستخدم المحفوظة:', error);
                 localStorage.removeItem('gamesShopUser');
@@ -994,40 +1003,55 @@ async function handleSignup() {
 
     try {
         // محاولة التسجيل مع الخادم أولاً
-        const response = await fetch(`${API_BASE_URL}/api/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, name, password })
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, name, password })
+            });
 
-        if (response.ok) {
-            const result = await response.json();
+            if (response.ok) {
+                const result = await response.json();
 
-            if (result.success) {
-                currentUser = {
-                    id: result.user.id,
-                    name: result.user.name,
-                    email: result.user.email,
-                    avatar: result.user.avatar
-                };
-                localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-                loadUserVexBalance();
-                await showMainPage();
-                showNotification('تم إنشاء الحساب بنجاح! 🎉');
-                return;
-            } else {
-                showNotification(result.error, 'error');
-                return;
+                if (result.success) {
+                    currentUser = {
+                        id: result.user.id,
+                        name: result.user.name,
+                        email: result.user.email,
+                        avatar: result.user.avatar
+                    };
+                    localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+                    
+                    // تسجيل المستخدم في المصفوفة المحلية
+                    const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
+                    if (!savedUsers.find(u => u.email === email)) {
+                        savedUsers.push({
+                            id: result.user.id,
+                            name: result.user.name,
+                            email: email,
+                            password: password,
+                            avatar: result.user.avatar,
+                            createdAt: new Date().toISOString()
+                        });
+                        localStorage.setItem('gamesShopUsers', JSON.stringify(savedUsers));
+                    }
+                    
+                    loadUserVexBalance();
+                    await showMainPage();
+                    showNotification('تم إنشاء الحساب بنجاح! 🎉');
+                    return;
+                } else {
+                    showNotification(result.error, 'error');
+                    return;
+                }
             }
+        } catch (serverError) {
+            console.log('Server registration failed, trying local registration:', serverError);
         }
-    } catch (error) {
-        console.log('Server registration failed, trying local registration:', error);
-    }
 
-    // في حالة فشل الخادم، استخدم التسجيل المحلي
-    try {
+        // في حالة فشل الخادم، استخدم التسجيل المحلي
         const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
 
         // تحقق من وجود المستخدم
@@ -1060,8 +1084,9 @@ async function handleSignup() {
         loadUserVexBalance();
         await showMainPage();
         showNotification('تم إنشاء الحساب بنجاح! 🎉');
-    } catch (localError) {
-        console.error('Local registration error:', localError);
+
+    } catch (error) {
+        console.error('Registration error:', error);
         showNotification('خطأ في إنشاء الحساب', 'error');
     } finally {
         showLoading(false);
@@ -1138,6 +1163,14 @@ function showLoginPage() {
 }
 
 async function showMainPage() {
+    // التأكد من وجود المستخدم
+    if (!currentUser) {
+        console.error('❌ لا يوجد مستخدم مسجل دخول');
+        showLoginPage();
+        return;
+    }
+
+    // إخفاء صفحة تسجيل الدخول وعرض الصفحة الرئيسية
     document.getElementById('loginPage').classList.remove('active');
     document.getElementById('mainPage').classList.add('active');
 
@@ -1157,7 +1190,12 @@ async function showMainPage() {
         userIdElement.textContent = `ID: ${currentUser.id}`;
     }
 
-    updateVexDisplay();
+    // تحديث رصيد Vex
+    if (typeof loadUserVexBalance === 'function') {
+        loadUserVexBalance();
+    } else {
+        updateVexDisplay();
+    }
 
     // تحديد صلاحيات المستخدم التلقائية
     setUserPermissions();
@@ -1166,22 +1204,32 @@ async function showMainPage() {
     registerMember();
 
     // Load all data from storage and server
-    await loadOffersFromGlobalStorage();
-    await loadConversationsFromServer(); // تحميل من الخادم أولاً
-    loadConversationsFromStorage(); // ثم من التخزين المحلي
-    loadUserSettingsFromStorage();
-    loadMembersFromStorage();
+    try {
+        await loadOffersFromGlobalStorage();
+        await loadConversationsFromServer(); // تحميل من الخادم أولاً
+        loadConversationsFromStorage(); // ثم من التخزين المحلي
+        loadUserSettingsFromStorage();
+        loadMembersFromStorage();
+    } catch (error) {
+        console.error('خطأ في تحميل البيانات:', error);
+    }
 
     // Check for new messages immediately and periodically
     checkForNewMessages();
-    setInterval(() => {
-        if (currentUser) {
-            checkForNewMessages();
-            loadConversationsFromServer(); // تحديث المحادثات من الخادم
-        }
-    }, 1000); // فحص كل ثانية للتحديث الفوري
+    
+    // إعداد فحص دوري للرسائل الجديدة (إذا لم يكن موجود بالفعل)
+    if (!window.messageCheckInterval) {
+        window.messageCheckInterval = setInterval(() => {
+            if (currentUser) {
+                checkForNewMessages();
+                if (typeof loadConversationsFromServer === 'function') {
+                    loadConversationsFromServer(); // تحديث المحادثات من الخادم
+                }
+            }
+        }, 3000); // فحص كل 3 ثوان
+    }
 
-    console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
+    console.log('✅ تم تحميل الصفحة الرئيسية بنجاح للمستخدم:', currentUser.name);
 }
 
 // Side menu functionality
@@ -3156,17 +3204,35 @@ function closeAdModal() {
 
 // Load user's Vex balance
 async function loadUserVexBalance() {
+    if (!currentUser) {
+        console.log('⚠️ لا يوجد مستخدم لتحميل رصيد Vex');
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/vex/${currentUser.id}`);
-        if (response.ok) {
-            const data = await response.json();
-            userVexBalance = data.vexBalance || 0;
-            updateVexDisplay();
-            console.log(`✅ تم تحميل رصيد Vex: ${userVexBalance}`);
-        } else {
-            console.log('⚠️ فشل تحميل رصيد Vex');
+        // محاولة تحميل من الخادم أولاً
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/vex/${currentUser.id}`);
+            if (response.ok) {
+                const data = await response.json();
+                userVexBalance = data.vexBalance || 0;
+                updateVexDisplay();
+                console.log(`✅ تم تحميل رصيد Vex من الخادم: ${userVexBalance}`);
+                return;
+            }
+        } catch (serverError) {
+            console.log('⚠️ فشل تحميل رصيد Vex من الخادم:', serverError);
         }
+
+        // في حالة فشل الخادم، استخدم التخزين المحلي
+        const savedVex = localStorage.getItem(`vex_${currentUser.id}`);
+        userVexBalance = savedVex ? parseInt(savedVex) : 0;
+        updateVexDisplay();
+        console.log(`✅ تم تحميل رصيد Vex من التخزين المحلي: ${userVexBalance}`);
+
     } catch (error) {
         console.error('خطأ في تحميل رصيد Vex:', error);
+        userVexBalance = 0;
+        updateVexDisplay();
     }
 }
