@@ -281,13 +281,30 @@ app.post('/api/login', (req, res) => {
     try {
         const { email, password } = req.body;
         
-        // Find user
-        const user = registeredUsers.find(u => u.email === email && u.password === password);
-        if (!user) {
-            return res.status(401).json({ success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+        // التحقق من وجود البيانات
+        if (!email || !password) {
+            return res.status(400).json({ success: false, error: 'من فضلك املأ جميع الحقول' });
+        }
+
+        // التحقق من صحة البريد الإلكتروني
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, error: 'من فضلك أدخل بريد إلكتروني صحيح' });
         }
         
-        res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar } });
+        // البحث عن المستخدم بالبريد الإلكتروني
+        const userByEmail = registeredUsers.find(u => u.email === email);
+        if (!userByEmail) {
+            return res.status(401).json({ success: false, error: 'البريد الإلكتروني غير مسجل' });
+        }
+
+        // التحقق من كلمة المرور
+        if (userByEmail.password !== password) {
+            return res.status(401).json({ success: false, error: 'كلمة المرور غير صحيحة' });
+        }
+        
+        console.log(`✅ تم تسجيل دخول المستخدم: ${userByEmail.name} (${email})`);
+        res.json({ success: true, user: { id: userByEmail.id, email: userByEmail.email, name: userByEmail.name, avatar: userByEmail.avatar } });
     } catch (error) {
         console.error('Error logging in user:', error);
         res.status(500).json({ success: false, error: 'خطأ في تسجيل الدخول' });

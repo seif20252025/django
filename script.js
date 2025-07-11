@@ -472,8 +472,22 @@ async function handleLogin() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
 
+    // التحقق من وجود البيانات
     if (!email || !password) {
         showNotification('من فضلك املأ جميع الحقول', 'error');
+        return;
+    }
+
+    // التحقق من صحة البريد الإلكتروني
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showNotification('من فضلك أدخل بريد إلكتروني صحيح', 'error');
+        return;
+    }
+
+    // التحقق من طول كلمة المرور
+    if (password.length < 6) {
+        showNotification('كلمة المرور يجب أن تحتوي على 6 أحرف على الأقل', 'error');
         return;
     }
 
@@ -481,60 +495,72 @@ async function handleLogin() {
 
     try {
         // محاولة تسجيل الدخول مع الخادم أولاً
-        const response = await fetch(`${API_BASE_URL}/api/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password })
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password })
+            });
 
-        if (response.ok) {
-            const result = await response.json();
+            if (response.ok) {
+                const result = await response.json();
 
-            if (result.success) {
-                currentUser = {
-                    id: result.user.id,
-                    name: result.user.name,
-                    email: result.user.email,
-                    avatar: result.user.avatar
-                };
-                localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-                loadUserVexBalance();
-                await showMainPage();
-                showNotification('تم تسجيل الدخول بنجاح! 🎉');
-                return;
-            } else {
-                showNotification(result.error, 'error');
-                return;
+                if (result.success) {
+                    currentUser = {
+                        id: result.user.id,
+                        name: result.user.name,
+                        email: result.user.email,
+                        avatar: result.user.avatar
+                    };
+                    localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+                    loadUserVexBalance();
+                    await showMainPage();
+                    showNotification('تم تسجيل الدخول بنجاح! 🎉');
+                    return;
+                } else {
+                    showNotification(result.error || 'بيانات تسجيل الدخول غير صحيحة', 'error');
+                    return;
+                }
             }
+        } catch (serverError) {
+            console.log('Server login failed, trying local authentication:', serverError);
         }
-    } catch (error) {
-        console.log('Server login failed, trying local authentication:', error);
-    }
 
-    // في حالة فشل الخادم، استخدم التسجيل المحلي
-    try {
+        // في حالة فشل الخادم، استخدم التسجيل المحلي
         const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
-        const user = savedUsers.find(u => u.email === email && u.password === password);
-
-        if (user) {
-            currentUser = {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                avatar: user.avatar || 1
-            };
-            localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-            loadUserVexBalance();
-            await showMainPage();
-            showNotification('تم تسجيل الدخول بنجاح! 🎉');
-        } else {
-            showNotification('بيانات تسجيل الدخول غير صحيحة', 'error');
+        
+        // البحث عن المستخدم بالبريد الإلكتروني أولاً
+        const userByEmail = savedUsers.find(u => u.email === email);
+        
+        if (!userByEmail) {
+            showNotification('البريد الإلكتروني غير مسجل، يرجى إنشاء حساب جديد', 'error');
+            return;
         }
-    } catch (localError) {
-        console.error('Local login error:', localError);
-        showNotification('خطأ في تسجيل الدخول', 'error');
+
+        // التحقق من كلمة المرور
+        if (userByEmail.password !== password) {
+            showNotification('كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى', 'error');
+            return;
+        }
+
+        // تسجيل الدخول بنجاح
+        currentUser = {
+            id: userByEmail.id,
+            name: userByEmail.name,
+            email: userByEmail.email,
+            avatar: userByEmail.avatar || 1
+        };
+        
+        localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+        loadUserVexBalance();
+        await showMainPage();
+        showNotification('تم تسجيل الدخول بنجاح! 🎉');
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('حدث خطأ في تسجيل الدخول، يرجى المحاولة مرة أخرى', 'error');
     } finally {
         showLoading(false);
     }
