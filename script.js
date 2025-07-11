@@ -1147,7 +1147,7 @@ async function handleSignup() {
                         email: result.user.email,
                         avatar: result.user.avatar
                     };
-                    
+
                     // حفظ بيانات المستخدم للدخول التلقائي
                     localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
 
@@ -1209,10 +1209,10 @@ async function handleSignup() {
             email: newUser.email,
             avatar: newUser.avatar
         };
-        
+
         // حفظ بيانات المستخدم للدخول التلقائي
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-        
+
         // تحميل الرصيد والدخول التلقائي للصفحة الرئيسية
         loadUserVexBalance();
         await showMainPage();
@@ -1855,7 +1855,8 @@ function resetSendOfferMessageForm() {
     if (elements.offerExchangeOptions) elements.offerExchangeOptions.classList.add('hidden');
     if (elements.additionalThingsInput) elements.additionalThingsInput.classList.add('hidden');
     if (elements.contactDetailsInput) elements.contactDetailsInput.classList.add('hidden');
-    if (elements.sendOfferImage) elements.sendOfferImage.value = '';
+    if (```text
+elements.sendOfferImage) elements.sendOfferImage.value = '';
 
     if (elements.sendOfferImagePreview) {
         elements.sendOfferImagePreview.innerHTML = '';
@@ -2030,10 +2031,10 @@ async function sendOfferMessage() {
                     id: window.selectedOffer.ownerId,
                     name: window.selectedOffer.ownerName
                 };
-                
+
                 await saveConversationToServer(chatId, chatMessage);
                 await notifyNewMessage(window.selectedOffer.ownerId);
-                
+
                 // استعادة currentChatPartner الأصلي
                 currentChatPartner = tempChatPartner;
             } catch (serverError) {
@@ -2555,7 +2556,7 @@ async function notifyNewMessage(recipientId) {
                 },
                 body: JSON.stringify(notification)
             });
-            
+
             if (!response.ok) {
                 throw new Error('Server notification failed');
             }
@@ -2904,7 +2905,6 @@ function loadBlockList() {
 
 async function blockUser(userId, userName) {
     if (confirm(`هل أنت متأكد من حظر ${userName}؟`)) {
-// This code file has been modified to remove the conversations tab from the messages modal and rely solely on offer messages.
         userSettings.blockedUsers.push(userId);
         saveUserSettingsToStorage();
         loadBlockList();
