@@ -39,9 +39,41 @@ const GLOBAL_OFFERS_KEY = 'globalGameShopOffers';
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-    initializeAds();
-    initializeMobileOptimizations();
+    console.log('📄 DOM تم تحميله بالكامل');
+    
+    // التأكد من تحميل جميع العناصر
+    if (document.readyState === 'complete') {
+        console.log('✅ الصفحة جاهزة تماماً');
+        initializeApp();
+        initializeAds();
+        initializeMobileOptimizations();
+    } else {
+        // انتظار تحميل الصفحة بالكامل
+        window.addEventListener('load', function() {
+            console.log('✅ تم تحميل جميع الموارد');
+            initializeApp();
+            initializeAds();
+            initializeMobileOptimizations();
+        });
+    }
+});
+
+// تأكيد إضافي للتحميل
+window.addEventListener('load', function() {
+    // التأكد من أن جميع الأزرار موجودة
+    const loginBtn = document.getElementById('loginSubmitBtn');
+    const signupBtn = document.getElementById('signupSubmitBtn');
+    
+    if (!loginBtn || !signupBtn) {
+        console.error('❌ لم يتم العثور على أزرار تسجيل الدخول');
+        // إعادة محاولة ربط الأحداث
+        setTimeout(() => {
+            setupEventListeners();
+            console.log('🔄 إعادة محاولة ربط الأحداث');
+        }, 500);
+    } else {
+        console.log('✅ جميع الأزرار موجودة وجاهزة');
+    }
 });
 
 // تحسينات للأجهزة المحمولة
@@ -93,26 +125,42 @@ function initializeMobileOptimizations() {
 }
 
 function initializeApp() {
-    // Check if user is already logged in
-    const savedUser = localStorage.getItem('gamesShopUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showMainPage();
-    } else {
-        showLoginPage();
-    }
+    console.log('🚀 بدء تهيئة التطبيق...');
+    
+    // تأخير لضمان تحميل DOM بالكامل
+    setTimeout(() => {
+        // Event listeners - يجب أن يكون أولاً
+        setupEventListeners();
+        console.log('✅ تم ربط الأحداث بنجاح');
 
-    // Load data from localStorage
-    loadOffersFromGlobalStorage();
-    loadConversationsFromStorage();
-    loadUserSettingsFromStorage();
-    loadMembersFromStorage();
+        // Check if user is already logged in
+        const savedUser = localStorage.getItem('gamesShopUser');
+        if (savedUser) {
+            try {
+                currentUser = JSON.parse(savedUser);
+                showMainPage();
+                console.log('✅ تم تسجيل دخول المستخدم تلقائياً');
+            } catch (error) {
+                console.error('خطأ في بيانات المستخدم المحفوظة:', error);
+                localStorage.removeItem('gamesShopUser');
+                showLoginPage();
+            }
+        } else {
+            showLoginPage();
+            console.log('📋 عرض صفحة تسجيل الدخول');
+        }
 
-    // Event listeners
-    setupEventListeners();
+        // Load data from localStorage
+        loadOffersFromGlobalStorage();
+        loadConversationsFromStorage();
+        loadUserSettingsFromStorage();
+        loadMembersFromStorage();
 
-    // تتبع حالة المستخدم والكتابة
-    setInterval(updateTypingStatus, 1000);
+        // تتبع حالة المستخدم والكتابة
+        setInterval(updateTypingStatus, 1000);
+        
+        console.log('✅ تم تهيئة التطبيق بالكامل');
+    }, 100);
 }
 
 // نظام العروض العالمي الجديد مع الخادم
@@ -315,19 +363,101 @@ function saveUserSettingsToStorage() {
 }
 
 function setupEventListeners() {
-    // Auth system
-    document.getElementById('loginSubmitBtn').addEventListener('click', handleLogin);
-    document.getElementById('signupSubmitBtn').addEventListener('click', handleSignup);
-    document.getElementById('showSignupBtn').addEventListener('click', showSignupForm);
-    document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
+    // Auth system - التأكد من وجود العناصر قبل ربط الأحداث
+    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+    const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+    const showSignupBtn = document.getElementById('showSignupBtn');
+    const showLoginBtn = document.getElementById('showLoginBtn');
+    const loginPassword = document.getElementById('loginPassword');
+    const signupConfirmPassword = document.getElementById('signupConfirmPassword');
+
+    if (loginSubmitBtn) {
+        loginSubmitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleLogin();
+        });
+    }
+
+    if (signupSubmitBtn) {
+        signupSubmitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleSignup();
+        });
+    }
+
+    if (showSignupBtn) {
+        showSignupBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showSignupForm();
+        });
+    }
+
+    if (showLoginBtn) {
+        showLoginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLoginForm();
+        });
+    }
 
     // Enter key listeners
-    document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') handleLogin();
-    });
-    document.getElementById('signupConfirmPassword').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') handleSignup();
-    });
+    if (loginPassword) {
+        loginPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleLogin();
+            }
+        });
+    }
+
+    if (signupConfirmPassword) {
+        signupConfirmPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSignup();
+            }
+        });
+    }
+
+    // إضافة مستمعات إضافية لجميع حقول النماذج
+    const loginEmail = document.getElementById('loginEmail');
+    if (loginEmail) {
+        loginEmail.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleLogin();
+            }
+        });
+    }
+
+    const signupEmail = document.getElementById('signupEmail');
+    if (signupEmail) {
+        signupEmail.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('signupName').focus();
+            }
+        });
+    }
+
+    const signupName = document.getElementById('signupName');
+    if (signupName) {
+        signupName.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('signupPassword').focus();
+            }
+        });
+    }
+
+    const signupPassword = document.getElementById('signupPassword');
+    if (signupPassword) {
+        signupPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('signupConfirmPassword').focus();
+            }
+        });
+    }
 
     // Menu
     document.getElementById('menuBtn').addEventListener('click', toggleSideMenu);
@@ -613,8 +743,16 @@ function setupEventListeners() {
 
 // Auth functionality
 async function handleLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+
+    if (!emailInput || !passwordInput) {
+        showNotification('خطأ في النظام: لم يتم العثور على حقول الدخول', 'error');
+        return;
+    }
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
 
     // التحقق من وجود البيانات
     if (!email || !password) {
@@ -711,10 +849,20 @@ async function handleLogin() {
 }
 
 async function handleSignup() {
-    const email = document.getElementById('signupEmail').value.trim();
-    const name = document.getElementById('signupName').value.trim();
-    const password = document.getElementById('signupPassword').value.trim();
-    const confirmPassword = document.getElementById('signupConfirmPassword').value.trim();
+    const emailInput = document.getElementById('signupEmail');
+    const nameInput = document.getElementById('signupName');
+    const passwordInput = document.getElementById('signupPassword');
+    const confirmPasswordInput = document.getElementById('signupConfirmPassword');
+
+    if (!emailInput || !nameInput || !passwordInput || !confirmPasswordInput) {
+        showNotification('خطأ في النظام: لم يتم العثور على حقول التسجيل', 'error');
+        return;
+    }
+
+    const email = emailInput.value.trim();
+    const name = nameInput.value.trim();
+    const password = passwordInput.value.trim();
+    const confirmPassword = confirmPasswordInput.value.trim();
 
     // Validation
     if (!email || !name || !password || !confirmPassword) {
@@ -735,6 +883,11 @@ async function handleSignup() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         showNotification('من فضلك أدخل بريد إلكتروني صحيح', 'error');
+        return;
+    }
+
+    if (name.length < 2) {
+        showNotification('الاسم يجب أن يحتوي على حرفين على الأقل', 'error');
         return;
     }
 
