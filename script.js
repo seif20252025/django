@@ -620,21 +620,59 @@ function setupEventListeners() {
 
     // Add event listener for send offer message buttons
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('message-btn') && e.target.textContent.includes('ارسال رساله📩')) {
-            // Extract offer data from the clicked button's parent offer card
-            const offerCard = e.target.closest('.offer-card');
-            if (offerCard) {
-                // Find the offer data by looking at the offer details
-                const offerUserName = offerCard.querySelector('.offer-username').textContent.replace(' 👑', '');
-                const offerGame = offerCard.querySelector('.offer-detail:nth-child(1)').textContent.split(':')[1].trim();
-
-                // Find the offer in the offers array to get the user ID
-                const offer = offers.find(o => o.userName === offerUserName && o.game === offerGame);
-                if (offer) {
-                    showSendOfferMessageModal(offer.id, offer.userName, offer.userId);
-                } else {
+        if (e.target && e.target.classList && e.target.classList.contains('message-btn') && e.target.textContent.includes('ارسال رساله📩')) {
+            try {
+                // Extract offer data from the clicked button's parent offer card
+                const offerCard = e.target.closest('.offer-card');
+                if (!offerCard) {
+                    console.error('❌ لم يتم العثور على بطاقة العرض');
                     showNotification('خطأ في العثور على بيانات العرض', 'error');
+                    return;
                 }
+
+                // البحث عن اسم المستخدم والمعرف من البيانات المخزنة في الزر
+                const offerUserId = e.target.getAttribute('data-offer-user-id');
+                const offerUserName = e.target.getAttribute('data-offer-user');
+                const offerId = e.target.getAttribute('data-offer-id');
+
+                if (offerUserId && offerUserName) {
+                    // استخدام البيانات المخزنة في الزر مباشرة
+                    showSendOfferMessageModal(offerId, offerUserName, parseInt(offerUserId));
+                } else {
+                    // البحث بالطريقة التقليدية كاحتياطي
+                    const offerUserNameElement = offerCard.querySelector('.offer-username');
+                    const offerGameElement = offerCard.querySelector('.offer-detail:nth-child(1)');
+                    
+                    if (!offerUserNameElement || !offerGameElement) {
+                        console.error('❌ لم يتم العثور على عناصر بيانات العرض');
+                        showNotification('خطأ في قراءة بيانات العرض', 'error');
+                        return;
+                    }
+
+                    const offerUserNameText = offerUserNameElement.textContent.replace(' 👑', '');
+                    const offerGameText = offerGameElement.textContent.split(':')[1];
+                    
+                    if (!offerGameText) {
+                        console.error('❌ لم يتم العثور على اسم اللعبة');
+                        showNotification('خطأ في قراءة اسم اللعبة', 'error');
+                        return;
+                    }
+
+                    const gameText = offerGameText.trim();
+
+                    // Find the offer in the offers array to get the user ID
+                    const offer = offers.find(o => o.userName === offerUserNameText && o.game === gameText);
+                    if (offer) {
+                        showSendOfferMessageModal(offer.id, offer.userName, offer.userId);
+                    } else {
+                        console.error('❌ لم يتم العثور على العرض في المصفوفة');
+                        // إنشاء مودال مبسط للإرسال
+                        showQuickMessageModal(offerUserNameText, null);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ خطأ في معالجة النقر على زر الرسالة:', error);
+                showNotification('حدث خطأ، يرجى المحاولة مرة أخرى', 'error');
             }
         }
     });
@@ -1626,6 +1664,15 @@ setInterval(async () => {
 
 // Send Offer Message System
 function showSendOfferMessageModal(offerId, offerOwnerName, offerOwnerId) {
+    // التحقق من وجود المودال
+    const modal = document.getElementById('sendOfferMessageModal');
+    if (!modal) {
+        console.error('❌ لم يتم العثور على مودال إرسال الرسالة');
+        // إنشاء مودال مؤقت للإرسال المباشر
+        showQuickMessageModal(offerOwnerName, offerOwnerId);
+        return;
+    }
+
     // حفظ معلومات العرض المحدد
     window.selectedOffer = {
         id: offerId,
@@ -1637,25 +1684,97 @@ function showSendOfferMessageModal(offerId, offerOwnerName, offerOwnerId) {
     resetSendOfferMessageForm();
 
     // عرض المودال
-    document.getElementById('sendOfferMessageModal').classList.add('active');
+    modal.classList.add('active');
 
     console.log('📩 تم فتح نافذة إرسال رسالة العرض لـ:', offerOwnerName);
 }
 
-function resetSendOfferMessageForm() {
-    // إعادة تعيين جميع الحقول
-    document.getElementById('offerDescription').value = '';
-    document.getElementById('offerExchangeOptions').classList.add('hidden');
-    document.getElementById('additionalThingsInput').classList.add('hidden');
-    document.getElementById('contactDetailsInput').classList.add('hidden');
-    document.getElementById('sendOfferImage').value = '';
-    document.getElementById('sendOfferImagePreview').innerHTML = '';
-    document.getElementById('sendOfferImagePreview').classList.add('hidden');
+function showQuickMessageModal(offerOwnerName, offerOwnerId) {
+    // إنشاء مودال مبسط للإرسال المباشر
+    const quickModal = document.createElement('div');
+    quickModal.className = 'modal active';
+    quickModal.id = 'quickMessageModal';
+    
+    quickModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>إرسال رسالة إلى ${offerOwnerName}</h3>
+                <button class="close-modal" onclick="closeQuickMessageModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="quickMessageText" placeholder="اكتب رسالتك هنا..." style="width: 100%; height: 100px; padding: 10px; border: 2px solid #00bfff; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; resize: vertical;"></textarea>
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button onclick="sendQuickMessage('${offerOwnerName}', ${offerOwnerId})" class="action-btn" style="background: linear-gradient(45deg, #00ff80, #00cc66); padding: 0.8rem 2rem;">إرسال الرسالة 📩</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(quickModal);
+}
 
-    // إزالة التحديد من الأزرار
-    document.querySelectorAll('.exchange-option-btn').forEach(btn => {
-        btn.classList.remove('selected');
-    });
+function closeQuickMessageModal() {
+    const modal = document.getElementById('quickMessageModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function sendQuickMessage(offerOwnerName, offerOwnerId) {
+    const messageText = document.getElementById('quickMessageText');
+    if (!messageText || !messageText.value.trim()) {
+        showNotification('يرجى كتابة رسالة', 'error');
+        return;
+    }
+    
+    // بدء المحادثة مباشرة
+    startChat(offerOwnerName, offerOwnerId);
+    
+    // إغلاق المودال
+    closeQuickMessageModal();
+    
+    // إضافة النص إلى حقل الإدخال في المحادثة
+    setTimeout(() => {
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+            chatInput.value = messageText.value.trim();
+            chatInput.focus();
+        }
+    }, 500);
+}
+
+function resetSendOfferMessageForm() {
+    // التحقق من وجود العناصر قبل التعديل عليها
+    const elements = {
+        offerDescription: document.getElementById('offerDescription'),
+        offerExchangeOptions: document.getElementById('offerExchangeOptions'),
+        additionalThingsInput: document.getElementById('additionalThingsInput'),
+        contactDetailsInput: document.getElementById('contactDetailsInput'),
+        sendOfferImage: document.getElementById('sendOfferImage'),
+        sendOfferImagePreview: document.getElementById('sendOfferImagePreview')
+    };
+
+    // إعادة تعيين الحقول الموجودة فقط
+    if (elements.offerDescription) elements.offerDescription.value = '';
+    if (elements.offerExchangeOptions) elements.offerExchangeOptions.classList.add('hidden');
+    if (elements.additionalThingsInput) elements.additionalThingsInput.classList.add('hidden');
+    if (elements.contactDetailsInput) elements.contactDetailsInput.classList.add('hidden');
+    if (elements.sendOfferImage) elements.sendOfferImage.value = '';
+    
+    if (elements.sendOfferImagePreview) {
+        elements.sendOfferImagePreview.innerHTML = '';
+        elements.sendOfferImagePreview.classList.add('hidden');
+    }
+
+    // إزالة التحديد من الأزرار إذا كانت موجودة
+    const exchangeButtons = document.querySelectorAll('.exchange-option-btn');
+    if (exchangeButtons.length > 0) {
+        exchangeButtons.forEach(btn => {
+            if (btn.classList) {
+                btn.classList.remove('selected');
+            }
+        });
+    }
 }
 
 function selectExchangeOption(option) {
