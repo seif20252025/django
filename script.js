@@ -952,13 +952,17 @@ function startChat(partnerName, partnerId) {
     document.getElementById('chatTitle').textContent = `مراسلة ${partnerName}`;
     document.getElementById('chatModal').classList.add('active');
     
-    // تحميل المحادثات أولاً ثم عرض الرسائل
+    // تحديث المحادثات وعرض الرسائل فوراً
     loadConversationsFromStorage();
-    setTimeout(() => {
-        loadChatMessages();
-    }, 100);
+    loadChatMessages();
     
     console.log(`💬 بدء محادثة مع ${partnerName} (ID: ${partnerId})`);
+    
+    // تحديث المحادثات من الخادم في الخلفية
+    setTimeout(async () => {
+        await loadConversationsFromServer();
+        loadChatMessages();
+    }, 500);
 }
 
 function loadChatMessages() {
@@ -966,6 +970,9 @@ function loadChatMessages() {
 
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
     console.log('🔄 تحميل رسائل المحادثة:', chatId);
+    
+    // تحديث المحادثات من التخزين المحلي
+    loadConversationsFromStorage();
     
     // التأكد من وجود المحادثة
     if (!conversations[chatId]) {
@@ -1019,7 +1026,7 @@ function loadChatMessages() {
             ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
         container.appendChild(messageDiv);
-        console.log(`📨 تم عرض رسالة ${index + 1}:`, isSent ? 'مرسلة' : 'مستلمة');
+        console.log(`📨 تم عرض رسالة ${index + 1}: "${message.text || 'صورة'}" من`, isSent ? 'أنت' : message.senderName || 'المستخدم الآخر');
     });
 
     container.scrollTop = container.scrollHeight;
@@ -1046,27 +1053,35 @@ async function sendMessage() {
         type: 'text'
     };
 
+    // التأكد من وجود المحادثة
     if (!conversations[chatId]) {
         conversations[chatId] = [];
     }
 
+    // إضافة الرسالة
     conversations[chatId].push(message);
     
-    // حفظ في الخادم أولاً
-    const serverSaved = await saveConversationToServer(chatId, message);
-    
-    // حفظ محلياً دائماً
+    // حفظ فوراً
     saveConversationsToStorage();
     
+    // عرض الرسالة فوراً
     loadChatMessages();
+    
+    // مسح المدخل
     input.value = '';
     
-    // Notify other users about new message
+    // حفظ في الخادم
+    const serverSaved = await saveConversationToServer(chatId, message);
+    
+    // إرسال إشعار للمستخدم الآخر
     await notifyNewMessage(currentChatPartner.id);
     
-    // Show success notification
+    // إشعار نجاح
     showNotification(`تم إرسال الرسالة إلى ${currentChatPartner.name} 📩`);
-    console.log(`📩 تم إرسال رسالة إلى ${currentChatPartner.name}: ${text}`);
+    console.log(`📩 تم إرسال رسالة إلى ${currentChatPartner.name}: "${text}"`);
+    
+    // تحديث قائمة المحادثات
+    loadMessagesList();
 }
 
 async function sendImageMessage() {
@@ -1091,29 +1106,35 @@ async function sendImageMessage() {
             type: 'image'
         };
 
+        // التأكد من وجود المحادثة
         if (!conversations[chatId]) {
             conversations[chatId] = [];
         }
 
+        // إضافة الرسالة
         conversations[chatId].push(message);
         
-        // حفظ في الخادم أولاً
-        const serverSaved = await saveConversationToServer(chatId, message);
-        
-        // حفظ محلياً دائماً
+        // حفظ فوراً
         saveConversationsToStorage();
         
+        // عرض الرسالة فوراً
         loadChatMessages();
         
-        // Clear the file input
+        // مسح اختيار الملف
         document.getElementById('chatImage').value = '';
         
-        // Notify other users about new message
+        // حفظ في الخادم
+        const serverSaved = await saveConversationToServer(chatId, message);
+        
+        // إرسال إشعار للمستخدم الآخر
         await notifyNewMessage(currentChatPartner.id);
         
-        // Show success notification
+        // إشعار نجاح
         showNotification(`تم إرسال صورة إلى ${currentChatPartner.name} 📸`);
         console.log(`📸 تم إرسال صورة إلى ${currentChatPartner.name}`);
+        
+        // تحديث قائمة المحادثات
+        loadMessagesList();
     };
     reader.readAsDataURL(imageFile);
 }
