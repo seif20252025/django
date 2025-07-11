@@ -414,6 +414,93 @@ app.post('/api/notify', (req, res) => {
     }
 });
 
+// Offer messages storage
+let globalOfferMessages = [];
+const OFFER_MESSAGES_FILE = path.join(__dirname, 'offer-messages.json');
+
+// Load offer messages from file
+function loadOfferMessagesFromFile() {
+    try {
+        if (fs.existsSync(OFFER_MESSAGES_FILE)) {
+            const data = fs.readFileSync(OFFER_MESSAGES_FILE, 'utf8');
+            globalOfferMessages = JSON.parse(data);
+            console.log(`📩 تم تحميل ${globalOfferMessages.length} رسالة عرض من الملف`);
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل رسائل العروض:', error);
+        globalOfferMessages = [];
+    }
+}
+
+// Save offer messages to file
+function saveOfferMessagesToFile() {
+    try {
+        fs.writeFileSync(OFFER_MESSAGES_FILE, JSON.stringify(globalOfferMessages, null, 2));
+        console.log(`💾 تم حفظ ${globalOfferMessages.length} رسالة عرض في الملف`);
+    } catch (error) {
+        console.error('خطأ في حفظ رسائل العروض:', error);
+    }
+}
+
+// Load offer messages on startup
+loadOfferMessagesFromFile();
+
+// Get offer messages for a user
+app.get('/api/offer-messages/:userId', (req, res) => {
+    try {
+        const userId = parseInt(req.params.userId);
+        const userMessages = globalOfferMessages.filter(msg => 
+            msg.recipientId === userId && msg.status === 'pending'
+        );
+        
+        res.json(userMessages);
+    } catch (error) {
+        console.error('Error getting offer messages:', error);
+        res.status(500).json({ success: false, error: 'Failed to get offer messages' });
+    }
+});
+
+// Save an offer message
+app.post('/api/offer-messages', (req, res) => {
+    try {
+        const offerMessage = req.body;
+        
+        globalOfferMessages.push(offerMessage);
+        saveOfferMessagesToFile();
+        
+        console.log(`📩 رسالة عرض جديدة من ${offerMessage.senderName} إلى ${offerMessage.recipientName}`);
+        res.json({ success: true, message: 'Offer message saved' });
+    } catch (error) {
+        console.error('Error saving offer message:', error);
+        res.status(500).json({ success: false, error: 'Failed to save offer message' });
+    }
+});
+
+// Update offer message status (accept/reject)
+app.put('/api/offer-messages/:messageId', (req, res) => {
+    try {
+        const messageId = req.params.messageId;
+        const { status, response } = req.body;
+        
+        const messageIndex = globalOfferMessages.findIndex(msg => msg.id == messageId);
+        if (messageIndex !== -1) {
+            globalOfferMessages[messageIndex].status = status;
+            if (response) {
+                globalOfferMessages[messageIndex].response = response;
+            }
+            saveOfferMessagesToFile();
+            
+            console.log(`📩 تم تحديث حالة رسالة العرض ${messageId} إلى ${status}`);
+            res.json({ success: true, message: 'Offer message updated' });
+        } else {
+            res.status(404).json({ success: false, error: 'Offer message not found' });
+        }
+    } catch (error) {
+        console.error('Error updating offer message:', error);
+        res.status(500).json({ success: false, error: 'Failed to update offer message' });
+    }
+});
+
 // Start server
 app.listen(port, '0.0.0.0', () => {
     console.log(`🎮 GAMES SHOP Server running on http://0.0.0.0:${port}`);

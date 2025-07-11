@@ -148,7 +148,7 @@ function initializeApp() {
         if (savedUser) {
             try {
                 const userData = JSON.parse(savedUser);
-                
+
                 // التحقق من صحة بيانات المستخدم
                 if (userData && userData.id && userData.name && userData.email) {
                     currentUser = userData;
@@ -642,7 +642,7 @@ function setupEventListeners() {
                     // البحث بالطريقة التقليدية كاحتياطي
                     const offerUserNameElement = offerCard.querySelector('.offer-username');
                     const offerGameElement = offerCard.querySelector('.offer-detail:nth-child(1)');
-                    
+
                     if (!offerUserNameElement || !offerGameElement) {
                         console.error('❌ لم يتم العثور على عناصر بيانات العرض');
                         showNotification('خطأ في قراءة بيانات العرض', 'error');
@@ -651,7 +651,7 @@ function setupEventListeners() {
 
                     const offerUserNameText = offerUserNameElement.textContent.replace(' 👑', '');
                     const offerGameText = offerGameElement.textContent.split(':')[1];
-                    
+
                     if (!offerGameText) {
                         console.error('❌ لم يتم العثور على اسم اللعبة');
                         showNotification('خطأ في قراءة اسم اللعبة', 'error');
@@ -1061,7 +1061,7 @@ async function handleSignup() {
                         avatar: result.user.avatar
                     };
                     localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-                    
+
                     // تسجيل المستخدم في المصفوفة المحلية
                     const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
                     if (!savedUsers.find(u => u.email === email)) {
@@ -1075,7 +1075,7 @@ async function handleSignup() {
                         });
                         localStorage.setItem('gamesShopUsers', JSON.stringify(savedUsers));
                     }
-                    
+
                     loadUserVexBalance();
                     await showMainPage();
                     showNotification('تم إنشاء الحساب بنجاح! 🎉');
@@ -1254,7 +1254,7 @@ async function showMainPage() {
 
     // Check for new messages immediately and periodically
     checkForNewMessages();
-    
+
     // إعداد فحص دوري للرسائل الجديدة (إذا لم يكن موجود بالفعل)
     if (!window.messageCheckInterval) {
         window.messageCheckInterval = setInterval(() => {
@@ -1694,7 +1694,7 @@ function showQuickMessageModal(offerOwnerName, offerOwnerId) {
     const quickModal = document.createElement('div');
     quickModal.className = 'modal active';
     quickModal.id = 'quickMessageModal';
-    
+
     quickModal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -1709,7 +1709,7 @@ function showQuickMessageModal(offerOwnerName, offerOwnerId) {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(quickModal);
 }
 
@@ -1726,13 +1726,13 @@ function sendQuickMessage(offerOwnerName, offerOwnerId) {
         showNotification('يرجى كتابة رسالة', 'error');
         return;
     }
-    
+
     // بدء المحادثة مباشرة
     startChat(offerOwnerName, offerOwnerId);
-    
+
     // إغلاق المودال
     closeQuickMessageModal();
-    
+
     // إضافة النص إلى حقل الإدخال في المحادثة
     setTimeout(() => {
         const chatInput = document.getElementById('chatInput');
@@ -1760,7 +1760,7 @@ function resetSendOfferMessageForm() {
     if (elements.additionalThingsInput) elements.additionalThingsInput.classList.add('hidden');
     if (elements.contactDetailsInput) elements.contactDetailsInput.classList.add('hidden');
     if (elements.sendOfferImage) elements.sendOfferImage.value = '';
-    
+
     if (elements.sendOfferImagePreview) {
         elements.sendOfferImagePreview.innerHTML = '';
         elements.sendOfferImagePreview.classList.add('hidden');
@@ -1856,9 +1856,8 @@ async function sendOfferMessage() {
     } else if (exchangeType === 'negotiate') {
         contactInfo = document.getElementById('contactDetails').value.trim();
         if (!contactInfo) {
-            showNotification('يرجى وضع معلومات التواصل (ديسكورد/واتساب/انستجرام/فيسبوك)', 'error');
-            return;
-        }
+            showNotification('يرجى وضع معلومات التواصل (ديسكورد/واتساب/انستجرام/فيسبوك)','error');
+        return;
     }
 
     // معلومات الصورة إن وجدت
@@ -2516,14 +2515,13 @@ function showMessagesModal() {
     document.getElementById('messagesModal').classList.add('active');
 
     // عرض تبويب المحادثات افتراضياً
-    showMessagesTab('conversations');
+    showMessagesTab('offers');
 
-    loadMessagesList();
     loadOfferMessages();
 
     // تحديث المحادثات من الخادم عند فتح قائمة المراسلات
     loadConversationsFromServer().then(() => {
-        loadMessagesList();
+        loadOfferMessages();
     });
 
     // إعداد تحديث دوري لقائمة المحادثات
@@ -2534,7 +2532,6 @@ function showMessagesModal() {
     window.messagesUpdateInterval = setInterval(async () => {
         if (document.getElementById('messagesModal').classList.contains('active')) {
             await loadConversationsFromServer();
-            loadMessagesList();
             loadOfferMessages();
         } else {
             clearInterval(window.messagesUpdateInterval);
@@ -2544,103 +2541,17 @@ function showMessagesModal() {
 
 function showMessagesTab(tabName) {
     // إخفاء جميع التبويبات
-    document.getElementById('messagesTabContent').classList.add('hidden');
-    document.getElementById('offerMessagesTabContent').classList.add('hidden');
+    document.getElementById('offerMessagesList').classList.add('hidden');
 
     // إزالة التحديد من جميع الأزرار
-    document.getElementById('messagesTabBtn').classList.remove('active');
     document.getElementById('offerMessagesTabBtn').classList.remove('active');
 
     // عرض التبويب المحدد
-    if (tabName === 'conversations') {
-        document.getElementById('messagesTabContent').classList.remove('hidden');
-        document.getElementById('messagesTabBtn').classList.add('active');
-    } else if (tabName === 'offers') {
-        document.getElementById('offerMessagesTabContent').classList.remove('hidden');
+    if (tabName === 'offers') {
+        document.getElementById('offerMessagesList').classList.remove('hidden');
         document.getElementById('offerMessagesTabBtn').classList.add('active');
         loadOfferMessages();
     }
-}
-
-function loadMessagesList() {
-    const container = document.getElementById('messagesList');
-    const userChats = Object.keys(conversations).filter(chatId => 
-        chatId.includes(currentUser.id.toString())
-    );
-
-    container.innerHTML = '';
-
-    const activeChats = userChats.filter(chatId => {
-        const messages = conversations[chatId];
-        return messages && messages.length > 0;
-    });
-
-    if (activeChats.length === 0) {
-        container.innerHTML = '<div class="no-conversations"><i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>لا توجد محادثات حالياً</p><p style="opacity: 0.7; font-size: 0.9rem;">ابدأ محادثة من خلال الضغط على "مراسلة الشخص" في أي عرض</p></div>';
-        return;
-    }
-
-    // ترتيب المحادثات حسب آخر رسالة
-    activeChats.sort((a, b) => {
-        const messagesA = conversations[a];
-        const messagesB = conversations[b];
-        const lastMessageA = messagesA[messagesA.length - 1];
-        const lastMessageB = messagesB[messagesB.length - 1];
-        return new Date(lastMessageB.timestamp) - new Date(lastMessageA.timestamp);
-    });
-
-    activeChats.forEach(chatId => {
-        const messages = conversations[chatId];
-        const lastMessage = messages[messages.length - 1];
-        const otherUserId = chatId.split('-').find(id => id !== currentUser.id.toString());
-
-        let otherUserName = 'مستخدم غير معروف';
-        let otherUserAvatar = 1;
-
-        const offer = offers.find(o => o.userId == otherUserId);
-        if (offer) {
-            otherUserName = offer.userName;
-            otherUserAvatar = offer.userAvatar;
-        } else {
-            const userMessage = messages.find(m => m.senderId != currentUser.id);
-            if (userMessage && userMessage.senderName) {
-                otherUserName = userMessage.senderName;
-                otherUserAvatar = userMessage.senderAvatar || 1;
-            }
-        }
-
-        // تحديد ما إذا كانت الرسالة جديدة
-        const isNewMessage = lastMessage.senderId !== currentUser.id;
-        const messageText = lastMessage.text || '📸 صورة';
-
-        const messageItem = document.createElement('div');
-        messageItem.className = `conversation-item ${isNewMessage ? 'new-message' : ''}`;
-        messageItem.innerHTML = `
-            <div class="conversation-header">
-                <img src="https://i.pravatar.cc/150?img=${otherUserAvatar}" alt="${otherUserName}" class="conversation-avatar">
-                <div class="conversation-info">
-                    <div class="conversation-name">${otherUserName}</div>
-                    <div class="conversation-last-message">${messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText}</div>
-                    <small class="conversation-time">${new Date(lastMessage.timestamp).toLocaleString('ar-EG', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: '2-digit',
-                        month: '2-digit'
-                    })}</small>
-                </div>
-                <div class="conversation-indicator">
-                    ${isNewMessage ? '<span class="new-message-dot">●</span>' : ''}
-                    <i class="fas fa-chevron-left"></i>
-                </div>
-            </div>
-        `;
-        messageItem.addEventListener('click', () => {
-            closeModal('messagesModal');
-            startChat(otherUserName, parseInt(otherUserId));
-        });
-
-        container.appendChild(messageItem);
-    });
 }
 
 // Other modals
@@ -2869,6 +2780,7 @@ function loadBlockList() {
 
 async function blockUser(userId, userName) {
     if (confirm(`هل أنت متأكد من حظر ${userName}؟`)) {
+// This code file has been modified to remove the conversations tab from the messages modal and rely solely on offer messages.
         userSettings.blockedUsers.push(userId);
         saveUserSettingsToStorage();
         loadBlockList();
