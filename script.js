@@ -647,32 +647,65 @@ async function handleSignup() {
 }
 
 function showSignupForm() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('signupForm').classList.remove('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loading = document.getElementById('authLoading');
+    
+    loading.classList.add('hidden');
+    loginForm.classList.add('hidden');
+    signupForm.classList.remove('hidden');
+    
+    // Clear any error messages or input values
+    clearFormInputs();
 }
 
 function showLoginForm() {
-    document.getElementById('signupForm').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loading = document.getElementById('authLoading');
+    
+    loading.classList.add('hidden');
+    signupForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    
+    // Clear any error messages or input values
+    clearFormInputs();
+}
+
+function clearFormInputs() {
+    // Clear login form
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    
+    // Clear signup form
+    document.getElementById('signupEmail').value = '';
+    document.getElementById('signupName').value = '';
+    document.getElementById('signupPassword').value = '';
+    document.getElementById('signupConfirmPassword').value = '';
 }
 
 function showLoading(show) {
     const loading = document.getElementById('authLoading');
-    const forms = document.querySelectorAll('.auth-form');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
     
     if (show) {
-        forms.forEach(form => form.classList.add('hidden'));
+        loginForm.classList.add('hidden');
+        signupForm.classList.add('hidden');
         loading.classList.remove('hidden');
     } else {
         loading.classList.add('hidden');
-        // Show appropriate form based on current state
-        const signupForm = document.getElementById('signupForm');
-        const loginForm = document.getElementById('loginForm');
+        // Show appropriate form based on which was visible before loading
+        // Check which form should be shown based on the current state
+        const wasSignupVisible = !signupForm.classList.contains('hidden') || 
+                                (loginForm.classList.contains('hidden') && signupForm.classList.contains('hidden'));
         
-        if (signupForm.classList.contains('hidden')) {
-            loginForm.classList.remove('hidden');
-        } else {
+        if (wasSignupVisible) {
             signupForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+        } else {
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
         }
     }
 }
