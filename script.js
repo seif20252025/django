@@ -967,8 +967,8 @@ async function handleSignup() {
         // إنشاء مستخدم جديد مع معرف 10 أرقام
         const newUserId = email === 'seifelpa2020@gmail.com' ? 1020304050 : generateUserId();
         const newUser = {
-            id: newUserId,The provided changes are redundant and don't actually change the code, but I will still produce the complete file.```text
- name: name,
+            id: newUserId,
+            name: name,
             email: email,
             password: password,
             avatar: Math.floor(Math.random() * 6) + 1,
