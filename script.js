@@ -382,7 +382,7 @@ function setupEventListeners() {
         if (currentUser) {
             checkForNewMessages();
         }
-    }, 10000); // كل 10 ثوانٍ
+    }, 1000); // كل ثانية
 }
 
 // Auth functionality
@@ -555,7 +555,7 @@ async function showMainPage() {
             checkForNewMessages();
             loadConversationsFromServer(); // تحديث المحادثات من الخادم
         }
-    }, 3000); // فحص كل 3 ثوانٍ
+    }, 1000); // فحص كل ثانية
     
     console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
 }
