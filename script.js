@@ -609,6 +609,27 @@ function setupEventListeners() {
         }
     });
 
+    // Add event listener for send offer message buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('message-btn') && e.target.textContent.includes('ارسال رساله📩')) {
+            // Extract offer data from the clicked button's parent offer card
+            const offerCard = e.target.closest('.offer-card');
+            if (offerCard) {
+                // Find the offer data by looking at the offer details
+                const offerUserName = offerCard.querySelector('.offer-username').textContent.replace(' 👑', '');
+                const offerGame = offerCard.querySelector('.offer-detail:nth-child(1)').textContent.split(':')[1].trim();
+                
+                // Find the offer in the offers array to get the user ID
+                const offer = offers.find(o => o.userName === offerUserName && o.game === offerGame);
+                if (offer) {
+                    showSendOfferMessageModal(offer.id, offer.userName, offer.userId);
+                } else {
+                    showNotification('خطأ في العثور على بيانات العرض', 'error');
+                }
+            }
+        }
+    });
+
     // الاستماع لتغييرات التخزين المحلي لتحديث العروض فوراً
     window.addEventListener('storage', function(e) {
         if (e.key === GLOBAL_OFFERS_KEY) {
@@ -1365,7 +1386,7 @@ function createOfferCard(offer) {
                 </div>
             </div>
             <div class="offer-actions">
-                <button class="action-btn message-btn" onclick="showSendOfferMessageModal(${offer.id}, '${offer.userName}', ${offer.userId})">
+                <button class="action-btn message-btn" data-offer-id="${offer.id}" data-offer-user="${offer.userName}" data-offer-user-id="${offer.userId}">
                     ارسال رساله📩
                 </button>
                 <button class="action-btn like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleLike(${offer.id})">
