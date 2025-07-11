@@ -9,8 +9,10 @@
     "isVIP": false,
     "image": null,
     "id": 1752213457294.8271,
-    "likes": 0,
-    "likedBy": [],
+    "likes": 1,
+    "likedBy": [
+      1752210637493
+    ],
     "timestamp": "2025-07-11T05:57:37.294Z"
   },
   {
