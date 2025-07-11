@@ -618,7 +618,7 @@ function setupEventListeners() {
                 // Find the offer data by looking at the offer details
                 const offerUserName = offerCard.querySelector('.offer-username').textContent.replace(' 👑', '');
                 const offerGame = offerCard.querySelector('.offer-detail:nth-child(1)').textContent.split(':')[1].trim();
-                
+
                 // Find the offer in the offers array to get the user ID
                 const offer = offers.find(o => o.userName === offerUserName && o.game === offerGame);
                 if (offer) {
@@ -655,17 +655,17 @@ function setupEventListeners() {
                 if (update && update.type === 'newMessage') {
                     // تحديث المحادثات فوراً
                     loadConversationsFromStorage();
-                    
+
                     // إذا كانت المحادثة مفتوحة، حدثها
                     if (currentChatPartner && document.getElementById('chatModal').classList.contains('active')) {
                         loadChatMessages();
                     }
-                    
+
                     // إذا كانت قائمة المحادثات مفتوحة، حدثها
                     if (document.getElementById('messagesModal').classList.contains('active')) {
                         loadMessagesList();
                     }
-                    
+
                     console.log('⚡ تم التحديث الفوري للرسائل');
                 }
             } catch (error) {
@@ -679,12 +679,12 @@ function setupEventListeners() {
         if (currentUser) {
             await loadConversationsFromServer(); // تحديث المحادثات من الخادم
             checkForNewMessages();
-            
+
             // إذا كانت هناك محادثة مفتوحة، حدثها
             if (currentChatPartner && document.getElementById('chatModal').classList.contains('active')) {
                 loadChatMessages();
             }
-            
+
             // إذا كانت قائمة المحادثات مفتوحة، حدثها
             if (document.getElementById('messagesModal').classList.contains('active')) {
                 loadMessagesList();
@@ -716,12 +716,12 @@ function setupEventListeners() {
                 const preview = document.getElementById('customAvatarPreview');
                 preview.innerHTML = `<img src="${e.target.result}" alt="صورة مخصصة" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #00bfff; box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);">`;
                 preview.classList.remove('hidden');
-                
+
                 // إزالة التحديد من الصور الافتراضية
                 document.querySelectorAll('.avatar-option').forEach(avatar => {
                     avatar.classList.remove('selected');
                 });
-                
+
                 selectedAvatar = e.target.result; // Set custom image as selected avatar
                 console.log('📸 تم اختيار صورة مخصصة');
             };
@@ -1143,7 +1143,7 @@ async function showMainPage() {
 
     // Update user info
     document.getElementById('userName').textContent = currentUser.name;
-    
+
     // عرض الصورة الصحيحة (مخصصة أو افتراضية)
     if (currentUser.avatar === 'custom' && currentUser.customAvatar) {
         document.getElementById('userAvatar').src = currentUser.customAvatar;
@@ -1386,11 +1386,15 @@ function createOfferCard(offer) {
                 </div>
             </div>
             <div class="offer-actions">
-                <button class="action-btn message-btn" data-offer-id="${offer.id}" data-offer-user="${offer.userName}" data-offer-user-id="${offer.userId}">
+                <button class="action-btn message-btn" 
+                        data-offer-id="${offer.id}" 
+                        data-offer-user="${offer.userName}" 
+                        data-offer-user-id="${offer.userId}"
+                        data-offer-game="${offer.game}"
+                        title="إرسال رسالة لصاحب العرض">
                     ارسال رساله📩
                 </button>
-                <button class="action-btn like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleLike(${offer.id})">
-                    ${hasLiked ? 'الغاء اعجاب💔' : 'لايك👍'}
+                <button class="action-btn like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleLike(${offer.id})">${hasLiked ? 'الغاء اعجاب💔' : 'لايك👍'}
                 </button>
                 ${isOwner ? `<button class="action-btn delete-btn" onclick="deleteOffer(${offer.id})">حــــذف🗑️</button>` : ''}
                 ${isAdmin && !isOwner ? `<button class="action-btn admin-delete-btn" onclick="adminDeleteOffer(${offer.id})">حذف إداري⚡</button>` : ''}
@@ -1505,10 +1509,10 @@ async function syncConversationsWithServer() {
     try {
         // تحديث المحادثات من الخادم
         await loadConversationsFromServer();
-        
+
         // إرسال المحادثات المحلية للخادم
         const localConversations = JSON.parse(localStorage.getItem('gamesShopConversations') || '{}');
-        
+
         for (const chatId in localConversations) {
             if (chatId.includes(currentUser.id.toString())) {
                 const messages = localConversations[chatId];
@@ -1519,7 +1523,7 @@ async function syncConversationsWithServer() {
                 }
             }
         }
-        
+
         console.log('🔄 تم مزامنة المحادثات مع الخادم');
     } catch (error) {
         console.error('خطأ في مزامنة المحادثات:', error);
@@ -1531,17 +1535,17 @@ async function syncMessagesForBothUsers(chatId, message) {
     try {
         // حفظ الرسالة في الخادم
         await saveConversationToServer(chatId, message);
-        
+
         // إرسال إشعار فوري للطرف الآخر
         const userIds = chatId.split('-').map(id => parseInt(id));
         const otherUserId = userIds.find(id => id !== currentUser.id);
-        
+
         if (otherUserId) {
             await notifyNewMessage(otherUserId);
-            
+
             // تحديث فوري للمحادثات
             await loadConversationsFromServer();
-            
+
             // إرسال إشعار عبر localStorage للتحديث الفوري
             const instantUpdate = {
                 type: 'newMessage',
@@ -1549,15 +1553,15 @@ async function syncMessagesForBothUsers(chatId, message) {
                 message: message,
                 timestamp: new Date().toISOString()
             };
-            
+
             localStorage.setItem('instantMessageUpdate', JSON.stringify(instantUpdate));
-            
+
             // إزالة الإشعار بعد ثانية
             setTimeout(() => {
                 localStorage.removeItem('instantMessageUpdate');
             }, 1000);
         }
-        
+
         console.log('📨 تم مزامنة الرسالة للطرفين');
     } catch (error) {
         console.error('خطأ في مزامنة الرسالة:', error);
@@ -1580,13 +1584,13 @@ function showSendOfferMessageModal(offerId, offerOwnerName, offerOwnerId) {
         ownerName: offerOwnerName,
         ownerId: offerOwnerId
     };
-    
+
     // إعادة تعيين النموذج
     resetSendOfferMessageForm();
-    
+
     // عرض المودال
     document.getElementById('sendOfferMessageModal').classList.add('active');
-    
+
     console.log('📩 تم فتح نافذة إرسال رسالة العرض لـ:', offerOwnerName);
 }
 
@@ -1599,7 +1603,7 @@ function resetSendOfferMessageForm() {
     document.getElementById('sendOfferImage').value = '';
     document.getElementById('sendOfferImagePreview').innerHTML = '';
     document.getElementById('sendOfferImagePreview').classList.add('hidden');
-    
+
     // إزالة التحديد من الأزرار
     document.querySelectorAll('.exchange-option-btn').forEach(btn => {
         btn.classList.remove('selected');
@@ -1611,17 +1615,17 @@ function selectExchangeOption(option) {
     document.querySelectorAll('.exchange-option-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
-    
+
     // العثور على الزر المضغوط وتحديده
     const targetBtn = document.querySelector(`[data-option="${option}"]`);
     if (targetBtn) {
         targetBtn.classList.add('selected');
     }
-    
+
     // إخفاء جميع الحقول الإضافية
     document.getElementById('additionalThingsInput').classList.add('hidden');
     document.getElementById('contactDetailsInput').classList.add('hidden');
-    
+
     // عرض الحقل المناسب حسب الاختيار
     if (option === 'offer_plus') {
         document.getElementById('additionalThingsInput').classList.remove('hidden');
@@ -1630,7 +1634,7 @@ function selectExchangeOption(option) {
         document.getElementById('contactDetailsInput').classList.remove('hidden');
         console.log('🔄 تم تفعيل خيار التفاوض');
     }
-    
+
     console.log('✅ تم اختيار نوع المقابل:', option);
 }
 
@@ -1656,25 +1660,25 @@ async function sendOfferMessage() {
         showNotification('خطأ: لم يتم تحديد العرض المراد الرد عليه', 'error');
         return;
     }
-    
+
     const offerDescription = document.getElementById('offerDescription').value.trim();
     const selectedOption = document.querySelector('.exchange-option-btn.selected');
-    
+
     // التحقق من الحقول المطلوبة
     if (!offerDescription) {
         showNotification('يرجى كتابة عرضك', 'error');
         return;
     }
-    
+
     if (!selectedOption) {
         showNotification('يرجى اختيار نوع المقابل', 'error');
         return;
     }
-    
+
     const exchangeType = selectedOption.dataset.option;
     let exchangeDetails = '';
     let contactInfo = '';
-    
+
     if (exchangeType === 'offer_plus') {
         const additionalThings = document.getElementById('additionalThings').value.trim();
         if (!additionalThings) {
@@ -1689,11 +1693,11 @@ async function sendOfferMessage() {
             return;
         }
     }
-    
+
     // معلومات الصورة إن وجدت
     const imageFile = document.getElementById('sendOfferImage').files[0];
     let imageData = null;
-    
+
     if (imageFile) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -1704,14 +1708,14 @@ async function sendOfferMessage() {
     } else {
         sendOfferMessageData();
     }
-    
+
     function sendOfferMessageData() {
         const exchangeTypeText = {
             'offer_only': 'عرضك فقط📋',
             'offer_plus': 'عرضك و المزيد من الأشياء📃',
             'negotiate': 'نتفق على شيء💬'
         };
-        
+
         const offerMessage = {
             type: 'offer_message',
             id: Date.now() + Math.random(),
@@ -1730,18 +1734,18 @@ async function sendOfferMessage() {
             timestamp: new Date().toISOString(),
             status: 'pending'
         };
-        
+
         // حفظ الرسالة في التخزين المحلي
         const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
         offerMessages.push(offerMessage);
         localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
-        
+
         // إرسال الرسالة كرسالة عادية أيضاً
         const chatId = getChatId(currentUser.id, window.selectedOffer.ownerId);
         if (!conversations[chatId]) {
             conversations[chatId] = [];
         }
-        
+
         const chatMessage = {
             senderId: currentUser.id,
             senderName: currentUser.name,
@@ -1751,18 +1755,18 @@ async function sendOfferMessage() {
             type: 'offer_message',
             offerMessageId: offerMessage.id
         };
-        
+
         conversations[chatId].push(chatMessage);
         saveConversationsToStorage();
-        
+
         // حفظ في الخادم
         saveConversationToServer(chatId, chatMessage);
         notifyNewMessage(window.selectedOffer.ownerId);
-        
+
         // إغلاق المودال وإظهار رسالة نجاح
         document.getElementById('sendOfferMessageModal').classList.remove('active');
         showNotification('تم إرسال الرسالة بنجاح! 📩');
-        
+
         console.log('✅ تم إرسال رسالة العرض:', offerMessage);
     }
 }
@@ -1772,15 +1776,15 @@ function loadOfferMessages() {
     const userMessages = offerMessages.filter(msg => 
         msg.recipientId === currentUser.id && msg.status === 'pending'
     );
-    
+
     const container = document.getElementById('offerMessagesList');
     container.innerHTML = '';
-    
+
     if (userMessages.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا توجد رسائل عروض جديدة</div>';
         return;
     }
-    
+
     userMessages.forEach(message => {
         const messageItem = document.createElement('div');
         messageItem.className = 'offer-message-item';
@@ -1812,23 +1816,23 @@ function rejectOfferMessage(messageId) {
     if (!confirm('هل أنت متأكد من رفض هذا العرض؟')) {
         return;
     }
-    
+
     const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
     const messageIndex = offerMessages.findIndex(msg => msg.id == messageId);
-    
+
     if (messageIndex !== -1) {
         const message = offerMessages[messageIndex];
-        
+
         // تحديث حالة الرسالة
         offerMessages[messageIndex].status = 'rejected';
         localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
-        
+
         // إرسال رسالة رفض للمرسل
         const chatId = getChatId(currentUser.id, message.senderId);
         if (!conversations[chatId]) {
             conversations[chatId] = [];
         }
-        
+
         const rejectMessage = {
             senderId: currentUser.id,
             senderName: currentUser.name,
@@ -1837,12 +1841,12 @@ function rejectOfferMessage(messageId) {
             timestamp: new Date().toISOString(),
             type: 'rejection'
         };
-        
+
         conversations[chatId].push(rejectMessage);
         saveConversationsToStorage();
         saveConversationToServer(chatId, rejectMessage);
         notifyNewMessage(message.senderId);
-        
+
         showNotification('تم رفض العرض وإرسال إشعار للمرسل');
         loadOfferMessages();
     }
@@ -1856,28 +1860,28 @@ function showAcceptOfferModal(messageId) {
 
 function acceptOfferMessage() {
     const contactInfo = document.getElementById('acceptContactInfo').value.trim();
-    
+
     if (!contactInfo) {
         showNotification('يرجى وضع معلومات التواصل (حساب أو رقم هاتف)', 'error');
         return;
     }
-    
+
     const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
     const messageIndex = offerMessages.findIndex(msg => msg.id == window.currentAcceptMessageId);
-    
+
     if (messageIndex !== -1) {
         const message = offerMessages[messageIndex];
-        
+
         // تحديث حالة الرسالة
         offerMessages[messageIndex].status = 'accepted';
         localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
-        
+
         // إرسال رسالة قبول للمرسل
         const chatId = getChatId(currentUser.id, message.senderId);
         if (!conversations[chatId]) {
             conversations[chatId] = [];
         }
-        
+
         const acceptMessage = {
             senderId: currentUser.id,
             senderName: currentUser.name,
@@ -1886,12 +1890,12 @@ function acceptOfferMessage() {
             timestamp: new Date().toISOString(),
             type: 'acceptance'
         };
-        
+
         conversations[chatId].push(acceptMessage);
         saveConversationsToStorage();
         saveConversationToServer(chatId, acceptMessage);
         notifyNewMessage(message.senderId);
-        
+
         document.getElementById('acceptOfferModal').classList.remove('active');
         showNotification('تم قبول العرض وإرسال معلومات التواصل للمرسل');
         loadOfferMessages();
@@ -1950,6 +1954,7 @@ function startChat(partnerName, partnerId) {
             clearInterval(window.chatUpdateInterval);
         }
     }, 1000); // تحديث كل ثانية للمحادثة المفتوحة
+
 }
 
 function updateChatTitle() {
@@ -2342,23 +2347,23 @@ function updateTypingStatus() {
 // Messages modal
 function showMessagesModal() {
     document.getElementById('messagesModal').classList.add('active');
-    
+
     // عرض تبويب المحادثات افتراضياً
     showMessagesTab('conversations');
-    
+
     loadMessagesList();
     loadOfferMessages();
-    
+
     // تحديث المحادثات من الخادم عند فتح قائمة المراسلات
     loadConversationsFromServer().then(() => {
         loadMessagesList();
     });
-    
+
     // إعداد تحديث دوري لقائمة المحادثات
     if (window.messagesUpdateInterval) {
         clearInterval(window.messagesUpdateInterval);
     }
-    
+
     window.messagesUpdateInterval = setInterval(async () => {
         if (document.getElementById('messagesModal').classList.contains('active')) {
             await loadConversationsFromServer();
@@ -2374,11 +2379,11 @@ function showMessagesTab(tabName) {
     // إخفاء جميع التبويبات
     document.getElementById('messagesTabContent').classList.add('hidden');
     document.getElementById('offerMessagesTabContent').classList.add('hidden');
-    
+
     // إزالة التحديد من جميع الأزرار
     document.getElementById('messagesTabBtn').classList.remove('active');
     document.getElementById('offerMessagesTabBtn').classList.remove('active');
-    
+
     // عرض التبويب المحدد
     if (tabName === 'conversations') {
         document.getElementById('messagesTabContent').classList.remove('hidden');
@@ -2516,11 +2521,11 @@ function showEditProfileModal() {
     document.querySelectorAll('.avatar-option').forEach(avatar => {
         avatar.classList.remove('selected');
     });
-    
+
     const customPreview = document.getElementById('customAvatarPreview');
     customPreview.classList.add('hidden');
     customPreview.innerHTML = '';
-    
+
     // إذا كان المستخدم يستخدم صورة مخصصة
     if (currentUser.avatar === 'custom' && currentUser.customAvatar) {
         // تفعيل تبويب الصورة المخصصة
@@ -2528,11 +2533,11 @@ function showEditProfileModal() {
         document.getElementById('defaultAvatarsTab').classList.remove('active');
         document.getElementById('customAvatarContainer').classList.remove('hidden');
         document.getElementById('defaultAvatarsContainer').classList.add('hidden');
-        
+
         // عرض الصورة المخصصة
         customPreview.innerHTML = `<img src="${currentUser.customAvatar}" alt="صورة مخصصة" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #00bfff; box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);">`;
         customPreview.classList.remove('hidden');
-        
+
         selectedAvatar = currentUser.customAvatar;
     } else {
         // تفعيل تبويب الصور الافتراضية
@@ -2540,14 +2545,14 @@ function showEditProfileModal() {
         document.getElementById('customAvatarTab').classList.remove('active');
         document.getElementById('defaultAvatarsContainer').classList.remove('hidden');
         document.getElementById('customAvatarContainer').classList.add('hidden');
-        
+
         // تحديد الصورة الافتراضية
         document.querySelectorAll('.avatar-option').forEach(avatar => {
             if (avatar.dataset.avatar == currentUser.avatar) {
                 avatar.classList.add('selected');
             }
         });
-        
+
         selectedAvatar = currentUser.avatar;
     }
 }
@@ -2583,19 +2588,19 @@ async function saveProfile() {
 
     // Update display
     document.getElementById('userName').textContent = currentUser.name;
-    
+
     // عرض الصورة الصحيحة في البروفايل
     if (currentUser.avatar === 'custom' && currentUser.customAvatar) {
         document.getElementById('userAvatar').src = currentUser.customAvatar;
     } else {
         document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
     }
-    
+
     updateVexDisplay();
 
     closeModal('editProfileModal');
     showNotification('تم حفظ الاعدادات بنجاح! ✅');
-    
+
     console.log('✅ تم حفظ البروفايل:', {
         name: currentUser.name,
         avatar: currentUser.avatar,
@@ -2606,7 +2611,7 @@ async function saveProfile() {
 // Utility functions
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
-    
+
     // إيقاف فترات التحديث عند إغلاق المودالات
     if (modalId === 'messagesModal' && window.messagesUpdateInterval) {
         clearInterval(window.messagesUpdateInterval);
@@ -2769,6 +2774,7 @@ function showInsufficientVexModal() {
                     <div class="vex-icon" style="font-size: 3rem; margin-bottom: 1rem;">Vex</div>
                     <h4>عذراً، رصيدك من Vex غير كافي لإتمام هذه العملية</h4>
                     <p>سعر VIP: 10,000 Vex</p>
+                    ```python
                     <p>رصيدك الحالي: ${userVexBalance} Vex</p>
                     <p>يمكنك الحصول على المزيد من Vex من خلال الأنشطة في الموقع</p>
                 </div>
