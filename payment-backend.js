@@ -294,12 +294,93 @@ app.post('/api/login', (req, res) => {
     }
 });
 
+// Conversations storage
+let globalConversations = {};
+const CONVERSATIONS_FILE = path.join(__dirname, 'conversations.json');
+
+// Load conversations from file
+function loadConversationsFromFile() {
+    try {
+        if (fs.existsSync(CONVERSATIONS_FILE)) {
+            const data = fs.readFileSync(CONVERSATIONS_FILE, 'utf8');
+            globalConversations = JSON.parse(data);
+            console.log(`💬 تم تحميل المحادثات من الملف`);
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل المحادثات:', error);
+        globalConversations = {};
+    }
+}
+
+// Save conversations to file
+function saveConversationsToFile() {
+    try {
+        fs.writeFileSync(CONVERSATIONS_FILE, JSON.stringify(globalConversations, null, 2));
+        console.log(`💾 تم حفظ المحادثات في الملف`);
+    } catch (error) {
+        console.error('خطأ في حفظ المحادثات:', error);
+    }
+}
+
+// Load conversations on startup
+loadConversationsFromFile();
+
+// Get conversations for a user
+app.get('/api/conversations/:userId', (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const userConversations = {};
+        
+        // Find all conversations that include this user
+        Object.keys(globalConversations).forEach(chatId => {
+            if (chatId.includes(userId)) {
+                userConversations[chatId] = globalConversations[chatId];
+            }
+        });
+        
+        res.json(userConversations);
+    } catch (error) {
+        console.error('Error getting conversations:', error);
+        res.status(500).json({ success: false, error: 'Failed to get conversations' });
+    }
+});
+
+// Save a conversation message
+app.post('/api/conversations', (req, res) => {
+    try {
+        const { chatId, message, senderId, recipientId } = req.body;
+        
+        if (!globalConversations[chatId]) {
+            globalConversations[chatId] = [];
+        }
+        
+        globalConversations[chatId].push(message);
+        saveConversationsToFile();
+        
+        console.log(`💬 رسالة جديدة في المحادثة ${chatId} من المستخدم ${senderId}`);
+        res.json({ success: true, conversations: globalConversations });
+    } catch (error) {
+        console.error('Error saving conversation:', error);
+        res.status(500).json({ success: false, error: 'Failed to save conversation' });
+    }
+});
+
 // Debug endpoint to view all offers
 app.get('/api/debug/offers', (req, res) => {
     res.json({
         success: true,
         totalOffers: globalOffers.length,
         offers: globalOffers,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Debug endpoint to view all conversations
+app.get('/api/debug/conversations', (req, res) => {
+    res.json({
+        success: true,
+        totalConversations: Object.keys(globalConversations).length,
+        conversations: globalConversations,
         timestamp: new Date().toISOString()
     });
 });

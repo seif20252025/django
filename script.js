@@ -90,6 +90,50 @@ async function loadOffersFromGlobalStorage() {
     console.log('📋 إجمالي العروض المعروضة:', offers.length);
 }
 
+// تحميل المحادثات من الخادم
+async function loadConversationsFromServer() {
+    if (!currentUser) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/conversations/${currentUser.id}`);
+        if (response.ok) {
+            const serverConversations = await response.json();
+            conversations = serverConversations;
+            console.log('✅ تم تحميل المحادثات من الخادم');
+        }
+    } catch (error) {
+        console.log('⚠️ فشل تحميل المحادثات من الخادم:', error);
+    }
+}
+
+// حفظ المحادثة في الخادم
+async function saveConversationToServer(chatId, message) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/conversations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chatId: chatId,
+                message: message,
+                senderId: currentUser.id,
+                recipientId: currentChatPartner.id
+            })
+        });
+
+        if (response.ok) {
+            console.log('✅ تم حفظ الرسالة في الخادم');
+            return true;
+        } else {
+            throw new Error('Failed to save to server');
+        }
+    } catch (error) {
+        console.log('⚠️ فشل حفظ الرسالة في الخادم:', error);
+        return false;
+    }
+}
+
 async function saveOfferToGlobalStorage(offer) {
     try {
         // إنشاء معرف فريد للعرض
@@ -497,9 +541,10 @@ async function showMainPage() {
     // Register member
     registerMember();
 
-    // Load all data from storage
+    // Load all data from storage and server
     await loadOffersFromGlobalStorage();
-    loadConversationsFromStorage();
+    await loadConversationsFromServer(); // تحميل من الخادم أولاً
+    loadConversationsFromStorage(); // ثم من التخزين المحلي
     loadUserSettingsFromStorage();
     loadMembersFromStorage();
 
@@ -508,8 +553,9 @@ async function showMainPage() {
     setInterval(() => {
         if (currentUser) {
             checkForNewMessages();
+            loadConversationsFromServer(); // تحديث المحادثات من الخادم
         }
-    }, 5000); // فحص كل 5 ثوانٍ
+    }, 3000); // فحص كل 3 ثوانٍ
     
     console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
 }
@@ -911,12 +957,18 @@ async function sendMessage() {
     }
 
     conversations[chatId].push(message);
+    
+    // حفظ في الخادم أولاً
+    const serverSaved = await saveConversationToServer(chatId, message);
+    
+    // حفظ محلياً دائماً
     saveConversationsToStorage();
+    
     loadChatMessages();
     input.value = '';
     
     // Notify other users about new message
-    notifyNewMessage(currentChatPartner.id);
+    await notifyNewMessage(currentChatPartner.id);
     
     // Show success notification
     showNotification(`تم إرسال الرسالة إلى ${currentChatPartner.name} 📩`);
@@ -932,7 +984,7 @@ async function sendImageMessage() {
     }
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         const chatId = getChatId(currentUser.id, currentChatPartner.id);
 
         const message = {
@@ -950,14 +1002,20 @@ async function sendImageMessage() {
         }
 
         conversations[chatId].push(message);
+        
+        // حفظ في الخادم أولاً
+        const serverSaved = await saveConversationToServer(chatId, message);
+        
+        // حفظ محلياً دائماً
         saveConversationsToStorage();
+        
         loadChatMessages();
         
         // Clear the file input
         document.getElementById('chatImage').value = '';
         
         // Notify other users about new message
-        notifyNewMessage(currentChatPartner.id);
+        await notifyNewMessage(currentChatPartner.id);
         
         // Show success notification
         showNotification(`تم إرسال صورة إلى ${currentChatPartner.name} 📸`);
@@ -1559,10 +1617,16 @@ function initializeAds() {
         }
     });
     
-    // إعادة تحميل الإعلانات كل 30 ثانية
+    // إعادة تحميل الإعلانات كل 5 دقائق (300000 ميلي ثانية)
     setInterval(() => {
         refreshAds();
-    }, 30000);
+        showWelcomeAd(); // إظهار إعلان ترحيبي كل 5 دقائق
+    }, 300000);
+    
+    // إظهار إعلان ترحيبي عند دخول الموقع
+    setTimeout(() => {
+        showWelcomeAd();
+    }, 3000);
 }
 
 function refreshAds() {
@@ -1578,5 +1642,54 @@ function refreshAds() {
         console.log('🔄 تم تحديث الإعلانات');
     } catch (e) {
         console.log('خطأ في تحديث الإعلانات:', e);
+    }
+}
+
+// إظهار إعلان ترحيبي
+function showWelcomeAd() {
+    const adModal = document.createElement('div');
+    adModal.className = 'ad-modal';
+    adModal.innerHTML = `
+        <div class="ad-modal-content">
+            <div class="ad-header">
+                <h3>🎮 مرحباً بك في GAMES SHOP</h3>
+                <button class="close-ad-modal" onclick="closeAdModal()">×</button>
+            </div>
+            <div class="ad-body">
+                <!-- Google AdSense Ad -->
+                <ins class="adsbygoogle welcome-ad"
+                     style="display:block; width:300px; height:250px;"
+                     data-ad-client="ca-pub-1404937854433871"
+                     data-ad-slot="1234567890"
+                     data-ad-format="auto"></ins>
+                <div class="ad-message">
+                    <p>💫 استمتع بأفضل عروض الألعاب</p>
+                    <p>🎯 تواصل مع اللاعبين بسهولة</p>
+                    <p>⭐ تسوق بأمان مع الوسطاء</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(adModal);
+    
+    // تحميل الإعلان
+    try {
+        (adsbygoogle = window.adsbygoogle || []).push({});
+        console.log('📢 تم عرض الإعلان الترحيبي');
+    } catch (e) {
+        console.log('خطأ في تحميل الإعلان الترحيبي:', e);
+    }
+    
+    // إغلاق الإعلان تلقائياً بعد 10 ثوانٍ
+    setTimeout(() => {
+        closeAdModal();
+    }, 10000);
+}
+
+function closeAdModal() {
+    const adModal = document.querySelector('.ad-modal');
+    if (adModal) {
+        adModal.remove();
     }
 }
