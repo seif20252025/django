@@ -594,7 +594,7 @@ function setupEventListeners() {
         if (currentUser) {
             checkForNewMessages();
         }
-    }, 1000); // كل ثانية
+    }, 3000); // كل 3 ثوانٍ
 
     // Profile avatar tabs
     document.getElementById('defaultAvatarsTab').addEventListener('click', () => {
@@ -1046,6 +1046,9 @@ async function showMainPage() {
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
     updateVexDisplay();
 
+    // تحديد صلاحيات المستخدم التلقائية
+    setUserPermissions();
+
     // Register member
     registerMember();
 
@@ -1063,7 +1066,7 @@ async function showMainPage() {
             checkForNewMessages();
             loadConversationsFromServer(); // تحديث المحادثات من الخادم
         }
-    }, 1000); // فحص كل ثانية بدلاً من 3 ثوانٍ
+    }, 5000); // فحص كل 5 ثوانٍ لتقليل الضغط على الخادم
 
     console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
 }
@@ -1231,6 +1234,11 @@ function displayOffers(filteredOffers = null) {
         const offerCard = createOfferCard(offer);
         container.appendChild(offerCard);
     });
+
+    // إضافة أزرار الأدمن إذا كان المستخدم أدمن
+    if (currentUser && currentUser.role === 'admin') {
+        addAdminDeleteButtons();
+    }
 
     console.log('تم عرض العروض العالمية:', sortedOffers.length);
 }
@@ -2112,6 +2120,92 @@ function showNotification(message, type = 'success') {
             }
         }, 300);
     }, 3000);
+}
+
+// تحديد صلاحيات المستخدم التلقائياً
+function setUserPermissions() {
+    const ownerEmail = 'seifelpa2020@gmail.com'; // بريدك الإلكتروني كمالك التطبيق
+    
+    if (currentUser.email === ownerEmail) {
+        // إعطاء صلاحيات أدمن للمالك تلقائياً
+        currentUser.role = 'admin';
+        currentUser.isOwner = true;
+        localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+        
+        // إظهار أدوات الإدارة
+        showAdminControls();
+        
+        // تحديث رتبة المستخدم في الواجهة
+        const userRank = document.getElementById('userRank');
+        if (userRank) {
+            userRank.textContent = 'Owner/Admin';
+            userRank.style.color = '#ffd700';
+            userRank.style.fontWeight = 'bold';
+        }
+        
+        console.log('🔑 تم منح صلاحيات الأدمن للمالك:', currentUser.name);
+        showNotification('مرحباً أيها المالك! تم منحك صلاحيات الأدمن 👑', 'success');
+    } else {
+        // جميع المستخدمين الآخرين يحصلون على رتبة عضو
+        currentUser.role = 'member';
+        currentUser.isOwner = false;
+        localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+        
+        const userRank = document.getElementById('userRank');
+        if (userRank) {
+            userRank.textContent = 'Member';
+            userRank.style.color = '#00bfff';
+        }
+        
+        console.log('👤 تم تسجيل المستخدم كعضو:', currentUser.name);
+    }
+}
+
+// إظهار أدوات التحكم للأدمن
+function showAdminControls() {
+    const adminControls = document.getElementById('adminControls');
+    if (adminControls) {
+        adminControls.classList.remove('hidden');
+    }
+    
+    // إضافة أزرار حذف للعروض في الواجهة
+    addAdminDeleteButtons();
+}
+
+// إضافة أزرار حذف العروض للأدمن
+function addAdminDeleteButtons() {
+    setTimeout(() => {
+        const offers = document.querySelectorAll('.offer-card');
+        offers.forEach(offerCard => {
+            const offerActions = offerCard.querySelector('.offer-actions');
+            if (offerActions && !offerActions.querySelector('.admin-delete-btn')) {
+                const offerId = extractOfferIdFromCard(offerCard);
+                if (offerId) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'action-btn admin-delete-btn';
+                    deleteBtn.textContent = 'حذف إداري 🗑️';
+                    deleteBtn.dataset.offerId = offerId;
+                    deleteBtn.onclick = () => {
+                        if (confirm('هل أنت متأكد من حذف هذا العرض كأدمن؟')) {
+                            deleteOffer(offerId);
+                        }
+                    };
+                    offerActions.appendChild(deleteBtn);
+                }
+            }
+        });
+    }, 1000);
+}
+
+// استخراج معرف العرض من بطاقة العرض
+function extractOfferIdFromCard(offerCard) {
+    const deleteBtn = offerCard.querySelector('[onclick*="deleteOffer"]');
+    if (deleteBtn && deleteBtn.onclick) {
+        const onclickStr = deleteBtn.onclick.toString();
+        const match = onclickStr.match(/deleteOffer\((\d+(?:\.\d+)?)\)/);
+        return match ? parseFloat(match[1]) : null;
+    }
+    return null;
 }
 
 // Member management
