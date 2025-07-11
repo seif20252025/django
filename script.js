@@ -50,7 +50,7 @@ const GLOBAL_OFFERS_KEY = 'globalGameShopOffers';
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM تم تحميله بالكامل');
-    
+
     // التأكد من تحميل جميع العناصر
     if (document.readyState === 'complete') {
         console.log('✅ الصفحة جاهزة تماماً');
@@ -73,7 +73,7 @@ window.addEventListener('load', function() {
     // التأكد من أن جميع الأزرار موجودة
     const loginBtn = document.getElementById('loginSubmitBtn');
     const signupBtn = document.getElementById('signupSubmitBtn');
-    
+
     if (!loginBtn || !signupBtn) {
         console.error('❌ لم يتم العثور على أزرار تسجيل الدخول');
         // إعادة محاولة ربط الأحداث
@@ -136,7 +136,7 @@ function initializeMobileOptimizations() {
 
 function initializeApp() {
     console.log('🚀 بدء تهيئة التطبيق...');
-    
+
     // تأخير لضمان تحميل DOM بالكامل
     setTimeout(() => {
         // Event listeners - يجب أن يكون أولاً
@@ -168,7 +168,7 @@ function initializeApp() {
 
         // تتبع حالة المستخدم والكتابة
         setInterval(updateTypingStatus, 1000);
-        
+
         console.log('✅ تم تهيئة التطبيق بالكامل');
     }, 100);
 }
@@ -211,15 +211,15 @@ async function loadConversationsFromServer() {
         if (response.ok) {
             const serverConversations = await response.json();
             let hasNewMessages = false;
-            
+
             // دمج المحادثات من الخادم مع المحادثات المحلية
             Object.keys(serverConversations).forEach(chatId => {
                 if (!conversations[chatId]) {
                     conversations[chatId] = [];
                 }
-                
+
                 const beforeCount = conversations[chatId].length;
-                
+
                 // إضافة الرسائل الجديدة فقط
                 serverConversations[chatId].forEach(serverMessage => {
                     const exists = conversations[chatId].some(localMessage => 
@@ -232,20 +232,20 @@ async function loadConversationsFromServer() {
                         hasNewMessages = true;
                     }
                 });
-                
+
                 // ترتيب الرسائل حسب الوقت
                 conversations[chatId].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                
+
                 // إذا كان هناك رسائل جديدة وكان المستخدم في هذه المحادثة، حدث العرض
                 if (hasNewMessages && currentChatPartner && getChatId(currentUser.id, currentChatPartner.id) === chatId) {
                     loadChatMessages();
                 }
             });
-            
+
             if (hasNewMessages) {
                 saveConversationsToStorage();
                 console.log('✅ تم تحميل رسائل جديدة من الخادم');
-                
+
                 // تحديث قائمة المحادثات إذا كانت مفتوحة
                 if (document.getElementById('messagesModal').classList.contains('active')) {
                     loadMessagesList();
@@ -967,8 +967,8 @@ async function handleSignup() {
         // إنشاء مستخدم جديد مع معرف 10 أرقام
         const newUserId = email === 'seifelpa2020@gmail.com' ? 1020304050 : generateUserId();
         const newUser = {
-            id: newUserId,
-            name: name,
+            id: newUserId,The provided changes are redundant and don't actually change the code, but I will still produce the complete file.```text
+ name: name,
             email: email,
             password: password,
             avatar: Math.floor(Math.random() * 6) + 1,
@@ -1072,13 +1072,13 @@ async function showMainPage() {
     // Update user info
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userAvatar').src = `https://i.pravatar.cc/150?img=${currentUser.avatar}`;
-    
+
     // عرض الآيدي تحت الاسم
     const userIdElement = document.getElementById('userId');
     if (userIdElement) {
         userIdElement.textContent = `ID: ${currentUser.id}`;
     }
-    
+
     updateVexDisplay();
 
     // تحديد صلاحيات المستخدم التلقائية
@@ -1467,7 +1467,7 @@ function startChat(partnerName, partnerId) {
     if (window.chatUpdateInterval) {
         clearInterval(window.chatUpdateInterval);
     }
-    
+
     window.chatUpdateInterval = setInterval(async () => {
         if (currentChatPartner && document.getElementById('chatModal').classList.contains('active')) {
             await loadConversationsFromServer();
@@ -1537,11 +1537,11 @@ function loadChatMessages() {
 
         const messageDiv = document.createElement('div');
         const isSent = message.senderId === currentUser.id;
-        
+
         // إنشاء حاوي للرسالة
         const messageWrapper = document.createElement('div');
         messageWrapper.className = `message-wrapper ${isSent ? 'sent-wrapper' : 'received-wrapper'}`;
-        
+
         messageDiv.className = `chat-message ${isSent ? 'sent' : 'received'}`;
 
         const messageTime = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('ar-EG', {
@@ -1560,7 +1560,7 @@ function loadChatMessages() {
             ${messageContent}
             ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
-        
+
         messageWrapper.appendChild(messageDiv);
         container.appendChild(messageWrapper);
         console.log(`📨 تم عرض رسالة ${index + 1}: "${message.text || 'صورة'}" من`, isSent ? 'أنت' : message.senderName || 'المستخدم الآخر');
@@ -1615,10 +1615,10 @@ async function sendMessage() {
     try {
         const serverSaved = await saveConversationToServer(chatId, message);
         await notifyNewMessage(currentChatPartner.id);
-        
+
         // إشعار نجاح
         console.log(`📩 تم إرسال رسالة إلى ${currentChatPartner.name}: "${text}"`);
-        
+
         // تحديث فوري للمحادثات على الخادم
         setTimeout(async () => {
             await loadConversationsFromServer();
@@ -1626,7 +1626,7 @@ async function sendMessage() {
                 loadMessagesList();
             }
         }, 500);
-        
+
     } catch (error) {
         console.error('خطأ في إرسال الرسالة:', error);
         showNotification('حدث خطأ في إرسال الرسالة', 'error');
@@ -2255,10 +2255,10 @@ function setUserPermissions() {
         currentUser.role = 'admin';
         currentUser.isOwner = true;
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-        
+
         // إظهار أدوات الإدارة
         showAdminControls();
-        
+
         // تحديث رتبة المستخدم في الواجهة
         const userRank = document.getElementById('userRank');
         if (userRank) {
@@ -2267,7 +2267,7 @@ function setUserPermissions() {
             userRank.style.color = '#ffd700';
             userRank.style.fontWeight = 'bold';
         }
-        
+
         console.log('🔑 تم منح صلاحيات الأدمن للمالك:', currentUser.name);
         showNotification('مرحباً أيها المالك! تم منحك صلاحيات الأدمن 👑', 'success');
     } else {
@@ -2275,13 +2275,13 @@ function setUserPermissions() {
         currentUser.role = 'member';
         currentUser.isOwner = false;
         localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-        
+
         const userRank = document.getElementById('userRank');
         if (userRank) {
             userRank.textContent = 'Member';
             userRank.style.color = '#00bfff';
         }
-        
+
         console.log('👤 تم تسجيل المستخدم كعضو:', currentUser.name);
     }
 }
@@ -2292,7 +2292,7 @@ function showAdminControls() {
     if (adminControls) {
         adminControls.classList.remove('hidden');
     }
-    
+
     // إضافة أزرار حذف للعروض في الواجهة
     addAdminDeleteButtons();
 }

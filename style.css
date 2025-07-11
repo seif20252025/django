@@ -1045,12 +1045,13 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
 }
 
 .chat-message.received {
-    background: linear-gradient(135deg, #6c757d, #495057);
+    background: linear-gradient(135deg, #808080, #696969);
     color: #ffffff;
     border-bottom-left-radius: 5px;
     margin-right: auto;
     text-align: left;
     animation: slideInLeft 0.3s ease;
+    border: 1px solid rgba(128, 128, 128, 0.3);
 }
 
 @keyframes slideInRight {
