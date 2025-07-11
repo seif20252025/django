@@ -39,7 +39,56 @@ const GLOBAL_OFFERS_KEY = 'globalGameShopOffers';
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     initializeAds();
+    initializeMobileOptimizations();
 });
+
+// تحسينات للأجهزة المحمولة
+function initializeMobileOptimizations() {
+    // منع التكبير المزدوج على iOS
+    document.addEventListener('touchstart', function(e) {
+        if (e.target.tagName === 'BUTTON' || e.target.classList.contains('action-btn') || 
+            e.target.classList.contains('menu-btn') || e.target.classList.contains('submit-btn')) {
+            e.target.style.transform = 'scale(0.95)';
+        }
+    });
+    
+    document.addEventListener('touchend', function(e) {
+        if (e.target.tagName === 'BUTTON' || e.target.classList.contains('action-btn') || 
+            e.target.classList.contains('menu-btn') || e.target.classList.contains('submit-btn')) {
+            setTimeout(() => {
+                e.target.style.transform = 'scale(1)';
+            }, 100);
+        }
+    });
+    
+    // تحسين النقر للأجهزة المحمولة
+    const clickableElements = document.querySelectorAll('button, .action-btn, .menu-item, .auth-btn, .submit-btn');
+    clickableElements.forEach(element => {
+        element.style.cursor = 'pointer';
+        element.style.touchAction = 'manipulation';
+        
+        // إضافة تأثير بصري عند اللمس
+        element.addEventListener('touchstart', function() {
+            this.style.opacity = '0.8';
+        });
+        
+        element.addEventListener('touchend', function() {
+            this.style.opacity = '1';
+        });
+    });
+    
+    // تحسين إدخال النصوص للأجهزة المحمولة
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            setTimeout(() => {
+                this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        });
+    });
+    
+    console.log('✅ تم تطبيق تحسينات الأجهزة المحمولة');
+}
 
 function initializeApp() {
     // Check if user is already logged in
