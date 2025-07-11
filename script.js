@@ -211,11 +211,13 @@ async function loadConversationsFromServer() {
         if (response.ok) {
             const serverConversations = await response.json();
             let hasNewMessages = false;
+            let conversationsUpdated = false;
 
             // دمج المحادثات من الخادم مع المحادثات المحلية
             Object.keys(serverConversations).forEach(chatId => {
                 if (!conversations[chatId]) {
                     conversations[chatId] = [];
+                    conversationsUpdated = true;
                 }
 
                 const beforeCount = conversations[chatId].length;
@@ -230,11 +232,14 @@ async function loadConversationsFromServer() {
                     if (!exists) {
                         conversations[chatId].push(serverMessage);
                         hasNewMessages = true;
+                        conversationsUpdated = true;
                     }
                 });
 
                 // ترتيب الرسائل حسب الوقت
-                conversations[chatId].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                if (conversationsUpdated) {
+                    conversations[chatId].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                }
 
                 // إذا كان هناك رسائل جديدة وكان المستخدم في هذه المحادثة، حدث العرض
                 if (hasNewMessages && currentChatPartner && getChatId(currentUser.id, currentChatPartner.id) === chatId) {
@@ -242,13 +247,19 @@ async function loadConversationsFromServer() {
                 }
             });
 
-            if (hasNewMessages) {
+            if (conversationsUpdated) {
                 saveConversationsToStorage();
-                console.log('✅ تم تحميل رسائل جديدة من الخادم');
+                console.log('✅ تم تحديث المحادثات من الخادم');
 
                 // تحديث قائمة المحادثات إذا كانت مفتوحة
                 if (document.getElementById('messagesModal').classList.contains('active')) {
                     loadMessagesList();
+                }
+
+                // إظهار إشعار الرسائل الجديدة
+                if (hasNewMessages) {
+                    showMessageNotification();
+                    updateMessageBadge();
                 }
             }
         }
@@ -624,8 +635,9 @@ function setupEventListeners() {
     setInterval(() => {
         if (currentUser) {
             checkForNewMessages();
+            loadConversationsFromServer(); // تحديث المحادثات من الخادم
         }
-    }, 3000); // كل 3 ثوانٍ
+    }, 2000); // كل ثانيتين
 
     // Profile avatar tabs
     document.getElementById('defaultAvatarsTab').addEventListener('click', () => {
@@ -1461,6 +1473,10 @@ function startChat(partnerName, partnerId) {
     // تحديث فوري من الخادم
     loadConversationsFromServer().then(() => {
         loadChatMessages();
+        // تحديث قائمة المحادثات إذا كانت مفتوحة
+        if (document.getElementById('messagesModal').classList.contains('active')) {
+            loadMessagesList();
+        }
     });
 
     // إعداد تحديث دوري سريع للمحادثة المفتوحة
@@ -1471,10 +1487,11 @@ function startChat(partnerName, partnerId) {
     window.chatUpdateInterval = setInterval(async () => {
         if (currentChatPartner && document.getElementById('chatModal').classList.contains('active')) {
             await loadConversationsFromServer();
+            loadChatMessages();
         } else {
             clearInterval(window.chatUpdateInterval);
         }
-    }, 2000); // تحديث كل ثانيتين للمحادثة المفتوحة
+    }, 1500); // تحديث كل ثانية ونصف للمحادثة المفتوحة
 }
 
 function updateChatTitle() {
@@ -1859,6 +1876,25 @@ function updateTypingStatus() {
 function showMessagesModal() {
     document.getElementById('messagesModal').classList.add('active');
     loadMessagesList();
+    
+    // تحديث المحادثات من الخادم عند فتح قائمة المراسلات
+    loadConversationsFromServer().then(() => {
+        loadMessagesList();
+    });
+    
+    // إعداد تحديث دوري لقائمة المحادثات
+    if (window.messagesUpdateInterval) {
+        clearInterval(window.messagesUpdateInterval);
+    }
+    
+    window.messagesUpdateInterval = setInterval(async () => {
+        if (document.getElementById('messagesModal').classList.contains('active')) {
+            await loadConversationsFromServer();
+            loadMessagesList();
+        } else {
+            clearInterval(window.messagesUpdateInterval);
+        }
+    }, 3000); // تحديث كل 3 ثوان لقائمة المحادثات
 }
 
 function loadMessagesList() {
@@ -2023,6 +2059,14 @@ async function saveProfile() {
 // Utility functions
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
+    
+    // إيقاف فترات التحديث عند إغلاق المودالات
+    if (modalId === 'messagesModal' && window.messagesUpdateInterval) {
+        clearInterval(window.messagesUpdateInterval);
+    }
+    if (modalId === 'chatModal' && window.chatUpdateInterval) {
+        clearInterval(window.chatUpdateInterval);
+    }
 }
 
 // Settings functionality
