@@ -1352,8 +1352,8 @@ function createOfferCard(offer) {
                 </div>
             </div>
             <div class="offer-actions">
-                <button class="action-btn message-btn" onclick="startChat('${offer.userName}', ${offer.userId})">
-                    مراسله الشخص💬
+                <button class="action-btn message-btn" onclick="showSendOfferMessageModal(${offer.id}, '${offer.userName}', ${offer.userId})">
+                    ارسال رساله📩
                 </button>
                 <button class="action-btn like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleLike(${offer.id})">
                     ${hasLiked ? 'الغاء اعجاب💔' : 'لايك👍'}
@@ -1537,6 +1537,318 @@ setInterval(async () => {
         console.log('🔄 تم تحديث العروض تلقائياً');
     }
 }, 30000);
+
+// Send Offer Message System
+function showSendOfferMessageModal(offerId, offerOwnerName, offerOwnerId) {
+    // حفظ معلومات العرض المحدد
+    window.selectedOffer = {
+        id: offerId,
+        ownerName: offerOwnerName,
+        ownerId: offerOwnerId
+    };
+    
+    // إعادة تعيين النموذج
+    resetSendOfferMessageForm();
+    
+    // عرض المودال
+    document.getElementById('sendOfferMessageModal').classList.add('active');
+}
+
+function resetSendOfferMessageForm() {
+    // إعادة تعيين جميع الحقول
+    document.getElementById('offerDescription').value = '';
+    document.getElementById('offerExchangeOptions').classList.add('hidden');
+    document.getElementById('additionalThingsInput').classList.add('hidden');
+    document.getElementById('contactDetailsInput').classList.add('hidden');
+    document.getElementById('sendOfferImage').value = '';
+    document.getElementById('sendOfferImagePreview').innerHTML = '';
+    document.getElementById('sendOfferImagePreview').classList.add('hidden');
+    
+    // إزالة التحديد من الأزرار
+    document.querySelectorAll('.exchange-option-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+}
+
+function selectExchangeOption(option) {
+    // إزالة التحديد من جميع الأزرار
+    document.querySelectorAll('.exchange-option-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    // تحديد الزر المضغوط
+    event.target.classList.add('selected');
+    
+    // إخفاء جميع الحقول الإضافية
+    document.getElementById('additionalThingsInput').classList.add('hidden');
+    document.getElementById('contactDetailsInput').classList.add('hidden');
+    
+    // عرض الحقل المناسب حسب الاختيار
+    if (option === 'offer_plus') {
+        document.getElementById('additionalThingsInput').classList.remove('hidden');
+    } else if (option === 'negotiate') {
+        document.getElementById('contactDetailsInput').classList.remove('hidden');
+    }
+}
+
+function previewSendOfferImage() {
+    const fileInput = document.getElementById('sendOfferImage');
+    const preview = document.getElementById('sendOfferImagePreview');
+
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="معاينة الصورة" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    } else {
+        preview.innerHTML = '';
+        preview.classList.add('hidden');
+    }
+}
+
+async function sendOfferMessage() {
+    const offerDescription = document.getElementById('offerDescription').value.trim();
+    const selectedOption = document.querySelector('.exchange-option-btn.selected');
+    
+    // التحقق من الحقول المطلوبة
+    if (!offerDescription) {
+        showNotification('يرجى كتابة عرضك', 'error');
+        return;
+    }
+    
+    if (!selectedOption) {
+        showNotification('يرجى اختيار نوع المقابل', 'error');
+        return;
+    }
+    
+    const exchangeType = selectedOption.dataset.option;
+    let exchangeDetails = '';
+    let contactInfo = '';
+    
+    if (exchangeType === 'offer_plus') {
+        const additionalThings = document.getElementById('additionalThings').value.trim();
+        if (!additionalThings) {
+            showNotification('يرجى كتابة الأشياء الإضافية المطلوبة', 'error');
+            return;
+        }
+        exchangeDetails = additionalThings;
+    } else if (exchangeType === 'negotiate') {
+        contactInfo = document.getElementById('contactDetails').value.trim();
+        if (!contactInfo) {
+            showNotification('يرجى وضع معلومات التواصل (ديسكورد/واتساب/انستجرام/فيسبوك)', 'error');
+            return;
+        }
+    }
+    
+    // معلومات الصورة إن وجدت
+    const imageFile = document.getElementById('sendOfferImage').files[0];
+    let imageData = null;
+    
+    if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imageData = e.target.result;
+            sendOfferMessageData();
+        };
+        reader.readAsDataURL(imageFile);
+    } else {
+        sendOfferMessageData();
+    }
+    
+    function sendOfferMessageData() {
+        const exchangeTypeText = {
+            'offer_only': 'عرضك فقط📋',
+            'offer_plus': 'عرضك و المزيد من الأشياء📃',
+            'negotiate': 'نتفق على شيء💬'
+        };
+        
+        const offerMessage = {
+            type: 'offer_message',
+            id: Date.now() + Math.random(),
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            senderAvatar: currentUser.avatar,
+            recipientId: window.selectedOffer.ownerId,
+            recipientName: window.selectedOffer.ownerName,
+            offerId: window.selectedOffer.id,
+            offerDescription: offerDescription,
+            exchangeType: exchangeType,
+            exchangeTypeText: exchangeTypeText[exchangeType],
+            exchangeDetails: exchangeDetails,
+            contactInfo: contactInfo,
+            image: imageData,
+            timestamp: new Date().toISOString(),
+            status: 'pending'
+        };
+        
+        // حفظ الرسالة في التخزين المحلي
+        const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
+        offerMessages.push(offerMessage);
+        localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
+        
+        // إرسال الرسالة كرسالة عادية أيضاً
+        const chatId = getChatId(currentUser.id, window.selectedOffer.ownerId);
+        if (!conversations[chatId]) {
+            conversations[chatId] = [];
+        }
+        
+        const chatMessage = {
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            senderAvatar: currentUser.avatar,
+            text: `📩 رسالة عرض جديدة:\n\n${offerDescription}\n\nالمقابل: ${exchangeTypeText[exchangeType]}${exchangeDetails ? '\nالأشياء الإضافية: ' + exchangeDetails : ''}${contactInfo ? '\nمعلومات التواصل: ' + contactInfo : ''}`,
+            timestamp: new Date().toISOString(),
+            type: 'offer_message',
+            offerMessageId: offerMessage.id
+        };
+        
+        conversations[chatId].push(chatMessage);
+        saveConversationsToStorage();
+        
+        // حفظ في الخادم
+        saveConversationToServer(chatId, chatMessage);
+        notifyNewMessage(window.selectedOffer.ownerId);
+        
+        // إغلاق المودال وإظهار رسالة نجاح
+        document.getElementById('sendOfferMessageModal').classList.remove('active');
+        showNotification('تم إرسال الرسالة بنجاح! 📩');
+        
+        console.log('✅ تم إرسال رسالة العرض:', offerMessage);
+    }
+}
+
+function loadOfferMessages() {
+    const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
+    const userMessages = offerMessages.filter(msg => 
+        msg.recipientId === currentUser.id && msg.status === 'pending'
+    );
+    
+    const container = document.getElementById('offerMessagesList');
+    container.innerHTML = '';
+    
+    if (userMessages.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">لا توجد رسائل عروض جديدة</div>';
+        return;
+    }
+    
+    userMessages.forEach(message => {
+        const messageItem = document.createElement('div');
+        messageItem.className = 'offer-message-item';
+        messageItem.innerHTML = `
+            <div class="offer-message-header">
+                <img src="https://i.pravatar.cc/150?img=${message.senderAvatar}" alt="${message.senderName}" class="offer-message-avatar">
+                <div class="offer-message-info">
+                    <div class="offer-message-sender">${message.senderName}</div>
+                    <div class="offer-message-time">${new Date(message.timestamp).toLocaleString('ar-EG')}</div>
+                </div>
+            </div>
+            <div class="offer-message-content">
+                <div class="offer-message-description"><strong>العرض:</strong> ${message.offerDescription}</div>
+                <div class="offer-message-exchange"><strong>المقابل:</strong> ${message.exchangeTypeText}</div>
+                ${message.exchangeDetails ? `<div class="offer-message-details"><strong>الأشياء الإضافية:</strong> ${message.exchangeDetails}</div>` : ''}
+                ${message.contactInfo ? `<div class="offer-message-contact"><strong>معلومات التواصل:</strong> ${message.contactInfo}</div>` : ''}
+                ${message.image ? `<img src="${message.image}" alt="صورة العرض" class="offer-message-image" onclick="showImageModal('${message.image}')">` : ''}
+            </div>
+            <div class="offer-message-actions">
+                <button class="offer-message-btn reject-btn" onclick="rejectOfferMessage('${message.id}')">رفض🚫</button>
+                <button class="offer-message-btn accept-btn" onclick="showAcceptOfferModal('${message.id}')">قبول✅</button>
+            </div>
+        `;
+        container.appendChild(messageItem);
+    });
+}
+
+function rejectOfferMessage(messageId) {
+    if (!confirm('هل أنت متأكد من رفض هذا العرض؟')) {
+        return;
+    }
+    
+    const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
+    const messageIndex = offerMessages.findIndex(msg => msg.id == messageId);
+    
+    if (messageIndex !== -1) {
+        const message = offerMessages[messageIndex];
+        
+        // تحديث حالة الرسالة
+        offerMessages[messageIndex].status = 'rejected';
+        localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
+        
+        // إرسال رسالة رفض للمرسل
+        const chatId = getChatId(currentUser.id, message.senderId);
+        if (!conversations[chatId]) {
+            conversations[chatId] = [];
+        }
+        
+        const rejectMessage = {
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            senderAvatar: currentUser.avatar,
+            text: `❌ تم رفض عرضك: "${message.offerDescription}"`,
+            timestamp: new Date().toISOString(),
+            type: 'rejection'
+        };
+        
+        conversations[chatId].push(rejectMessage);
+        saveConversationsToStorage();
+        saveConversationToServer(chatId, rejectMessage);
+        notifyNewMessage(message.senderId);
+        
+        showNotification('تم رفض العرض وإرسال إشعار للمرسل');
+        loadOfferMessages();
+    }
+}
+
+function showAcceptOfferModal(messageId) {
+    window.currentAcceptMessageId = messageId;
+    document.getElementById('acceptContactInfo').value = '';
+    document.getElementById('acceptOfferModal').classList.add('active');
+}
+
+function acceptOfferMessage() {
+    const contactInfo = document.getElementById('acceptContactInfo').value.trim();
+    
+    if (!contactInfo) {
+        showNotification('يرجى وضع معلومات التواصل (حساب أو رقم هاتف)', 'error');
+        return;
+    }
+    
+    const offerMessages = JSON.parse(localStorage.getItem('offerMessages') || '[]');
+    const messageIndex = offerMessages.findIndex(msg => msg.id == window.currentAcceptMessageId);
+    
+    if (messageIndex !== -1) {
+        const message = offerMessages[messageIndex];
+        
+        // تحديث حالة الرسالة
+        offerMessages[messageIndex].status = 'accepted';
+        localStorage.setItem('offerMessages', JSON.stringify(offerMessages));
+        
+        // إرسال رسالة قبول للمرسل
+        const chatId = getChatId(currentUser.id, message.senderId);
+        if (!conversations[chatId]) {
+            conversations[chatId] = [];
+        }
+        
+        const acceptMessage = {
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            senderAvatar: currentUser.avatar,
+            text: `✅ تم قبول عرضك: "${message.offerDescription}"\n\nمعلومات التواصل: ${contactInfo}`,
+            timestamp: new Date().toISOString(),
+            type: 'acceptance'
+        };
+        
+        conversations[chatId].push(acceptMessage);
+        saveConversationsToStorage();
+        saveConversationToServer(chatId, acceptMessage);
+        notifyNewMessage(message.senderId);
+        
+        document.getElementById('acceptOfferModal').classList.remove('active');
+        showNotification('تم قبول العرض وإرسال معلومات التواصل للمرسل');
+        loadOfferMessages();
+    }
+}
 
 // Chat functionality
 function startChat(partnerName, partnerId) {
@@ -1982,7 +2294,12 @@ function updateTypingStatus() {
 // Messages modal
 function showMessagesModal() {
     document.getElementById('messagesModal').classList.add('active');
+    
+    // عرض تبويب المحادثات افتراضياً
+    showMessagesTab('conversations');
+    
     loadMessagesList();
+    loadOfferMessages();
     
     // تحديث المحادثات من الخادم عند فتح قائمة المراسلات
     loadConversationsFromServer().then(() => {
@@ -1998,10 +2315,31 @@ function showMessagesModal() {
         if (document.getElementById('messagesModal').classList.contains('active')) {
             await loadConversationsFromServer();
             loadMessagesList();
+            loadOfferMessages();
         } else {
             clearInterval(window.messagesUpdateInterval);
         }
     }, 3000); // تحديث كل 3 ثوان لقائمة المحادثات
+}
+
+function showMessagesTab(tabName) {
+    // إخفاء جميع التبويبات
+    document.getElementById('messagesTabContent').classList.add('hidden');
+    document.getElementById('offerMessagesTabContent').classList.add('hidden');
+    
+    // إزالة التحديد من جميع الأزرار
+    document.getElementById('messagesTabBtn').classList.remove('active');
+    document.getElementById('offerMessagesTabBtn').classList.remove('active');
+    
+    // عرض التبويب المحدد
+    if (tabName === 'conversations') {
+        document.getElementById('messagesTabContent').classList.remove('hidden');
+        document.getElementById('messagesTabBtn').classList.add('active');
+    } else if (tabName === 'offers') {
+        document.getElementById('offerMessagesTabContent').classList.remove('hidden');
+        document.getElementById('offerMessagesTabBtn').classList.add('active');
+        loadOfferMessages();
+    }
 }
 
 function loadMessagesList() {

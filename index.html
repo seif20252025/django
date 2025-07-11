@@ -183,6 +183,54 @@
             </div>
         </div>
 
+        <!-- Send Offer Message Modal -->
+        <div id="sendOfferMessageModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>ارسال رساله شراء/عرض/بيع📩</h3>
+                    <button class="close-modal" onclick="closeModal('sendOfferMessageModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>اريد أن اعرض لك شي مقابل هذا العرض📋</label>
+                        <input type="text" class="form-control" value="اريد أن اعرض لك شي مقابل هذا العرض📋" readonly style="background: rgba(0,191,255,0.1); color: #00bfff;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>اكتب عرضك📋</label>
+                        <textarea id="offerDescription" class="form-control" placeholder="اكتب تفاصيل عرضك هنا..." rows="4" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>المقابل🔁</label>
+                        <div class="exchange-options">
+                            <button class="exchange-option-btn" data-option="offer_only" onclick="selectExchangeOption('offer_only')">عرضك فقط📋</button>
+                            <button class="exchange-option-btn" data-option="offer_plus" onclick="selectExchangeOption('offer_plus')">عرضك و المزيد من الاشياء📃</button>
+                            <button class="exchange-option-btn" data-option="negotiate" onclick="selectExchangeOption('negotiate')">نتفق علي شي💬</button>
+                        </div>
+                    </div>
+                    
+                    <div id="additionalThingsInput" class="form-group hidden">
+                        <label>الاشياء📦</label>
+                        <textarea id="additionalThings" class="form-control" placeholder="اكتب الأشياء الإضافية المطلوبة..." rows="3"></textarea>
+                    </div>
+                    
+                    <div id="contactDetailsInput" class="form-group hidden">
+                        <label>تواصل معي لنتفق علي شي💬</label>
+                        <textarea id="contactDetails" class="form-control" placeholder="ضع حسابك ديسكورد/رقمك واتساب/انستجرام/فيسبوك للتواصل" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>إضافة صورة (اختياري) 📸</label>
+                        <input type="file" id="sendOfferImage" class="form-control" accept="image/*" onchange="previewSendOfferImage()">
+                        <div id="sendOfferImagePreview" class="image-preview hidden"></div>
+                    </div>
+                    
+                    <button onclick="sendOfferMessage()" class="submit-btn" style="background: linear-gradient(45deg, #007bff, #0056b3);">ارسال رساله📩</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Messages Modal -->
         <div id="messagesModal" class="modal">
             <div class="modal-content">
@@ -191,9 +239,39 @@
                     <button class="close-modal" onclick="closeModal('messagesModal')">×</button>
                 </div>
                 <div class="modal-body">
-                    <div id="messagesList" class="messages-list">
-                        <p>لا توجد محادثات حالياً</p>
+                    <div class="messages-tabs">
+                        <button id="messagesTabBtn" class="messages-tab-btn active" onclick="showMessagesTab('conversations')">المحادثات💬</button>
+                        <button id="offerMessagesTabBtn" class="messages-tab-btn" onclick="showMessagesTab('offers')">رسائل العروض📩</button>
                     </div>
+                    
+                    <div id="messagesTabContent" class="messages-tab-content">
+                        <div id="messagesList" class="messages-list">
+                            <p>لا توجد محادثات حالياً</p>
+                        </div>
+                    </div>
+                    
+                    <div id="offerMessagesTabContent" class="messages-tab-content hidden">
+                        <div id="offerMessagesList" class="offer-messages-list">
+                            <p>لا توجد رسائل عروض حالياً</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accept Offer Modal -->
+        <div id="acceptOfferModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>قبول العرض✅</h3>
+                    <button class="close-modal" onclick="closeModal('acceptOfferModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>ضيفني و تواصل معي💬</label>
+                        <textarea id="acceptContactInfo" class="form-control" placeholder="ضع حسابك أو رقم هاتفك للتواصل (ديسكورد/واتساب/انستجرام/فيسبوك)" rows="3" required></textarea>
+                    </div>
+                    <button onclick="acceptOfferMessage()" class="submit-btn" style="background: linear-gradient(45deg, #00ff80, #00cc66);">قبول العرض✅</button>
                 </div>
             </div>
         </div>
