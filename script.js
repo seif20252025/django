@@ -12,6 +12,9 @@ let userSettings = {
 };
 let registeredMembers = [];
 let hasNewMessages = false;
+let userOnlineStatus = {};
+let typingUsers = {};
+let typingTimeout = null;
 
 // API Base URL
 const API_BASE_URL = window.location.origin;
@@ -108,6 +111,9 @@ function initializeApp() {
 
     // Event listeners
     setupEventListeners();
+    
+    // تتبع حالة المستخدم والكتابة
+    setInterval(updateTypingStatus, 1000);
 }
 
 // نظام العروض العالمي الجديد مع الخادم
@@ -358,6 +364,10 @@ function setupEventListeners() {
         closeSideMenu();
         showSupportModal();
     });
+    document.getElementById('websiteIdeaBtn').addEventListener('click', () => {
+        closeSideMenu();
+        showWebsiteIdeaModal();
+    });
     document.getElementById('discordBtn').addEventListener('click', () => {
         closeSideMenu();
         joinDiscordServer();
@@ -406,6 +416,12 @@ function setupEventListeners() {
     document.getElementById('sendMessage').addEventListener('click', sendMessage);
     document.getElementById('chatInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') sendMessage();
+    });
+    document.getElementById('chatInput').addEventListener('input', function() {
+        startTyping();
+    });
+    document.getElementById('chatInput').addEventListener('focus', function() {
+        updateUserOnlineStatus(currentUser.id, true);
     });
     document.getElementById('sendImageBtn').addEventListener('click', () => {
         document.getElementById('chatImage').click();
@@ -465,6 +481,7 @@ async function handleLogin() {
     showLoading(true);
     
     try {
+        // محاولة تسجيل الدخول مع الخادم أولاً
         const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: {
@@ -473,25 +490,52 @@ async function handleLogin() {
             body: JSON.stringify({ email, password })
         });
         
-        const result = await response.json();
+        if (response.ok) {
+            const result = await response.json();
+            
+            if (result.success) {
+                currentUser = {
+                    id: result.user.id,
+                    name: result.user.name,
+                    email: result.user.email,
+                    avatar: result.user.avatar
+                };
+                localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+                userVexBalance = 0;
+                await showMainPage();
+                showNotification('تم تسجيل الدخول بنجاح! 🎉');
+                return;
+            } else {
+                showNotification(result.error, 'error');
+                return;
+            }
+        }
+    } catch (error) {
+        console.log('Server login failed, trying local authentication:', error);
+    }
+    
+    // في حالة فشل الخادم، استخدم التسجيل المحلي
+    try {
+        const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
+        const user = savedUsers.find(u => u.email === email && u.password === password);
         
-        if (result.success) {
+        if (user) {
             currentUser = {
-                id: result.user.id,
-                name: result.user.name,
-                email: result.user.email,
-                avatar: result.user.avatar
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar || 1
             };
             localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
             userVexBalance = 0;
             await showMainPage();
             showNotification('تم تسجيل الدخول بنجاح! 🎉');
         } else {
-            showNotification(result.error, 'error');
+            showNotification('بيانات تسجيل الدخول غير صحيحة', 'error');
         }
-    } catch (error) {
-        console.error('Login error:', error);
-        showNotification('خطأ في الاتصال بالخادم', 'error');
+    } catch (localError) {
+        console.error('Local login error:', localError);
+        showNotification('خطأ في تسجيل الدخول', 'error');
     } finally {
         showLoading(false);
     }
@@ -528,6 +572,7 @@ async function handleSignup() {
     showLoading(true);
     
     try {
+        // محاولة التسجيل مع الخادم أولاً
         const response = await fetch(`${API_BASE_URL}/api/register`, {
             method: 'POST',
             headers: {
@@ -536,25 +581,66 @@ async function handleSignup() {
             body: JSON.stringify({ email, name, password })
         });
         
-        const result = await response.json();
-        
-        if (result.success) {
-            currentUser = {
-                id: result.user.id,
-                name: result.user.name,
-                email: result.user.email,
-                avatar: result.user.avatar
-            };
-            localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
-            userVexBalance = 0;
-            await showMainPage();
-            showNotification('تم إنشاء الحساب بنجاح! 🎉');
-        } else {
-            showNotification(result.error, 'error');
+        if (response.ok) {
+            const result = await response.json();
+            
+            if (result.success) {
+                currentUser = {
+                    id: result.user.id,
+                    name: result.user.name,
+                    email: result.user.email,
+                    avatar: result.user.avatar
+                };
+                localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+                userVexBalance = 0;
+                await showMainPage();
+                showNotification('تم إنشاء الحساب بنجاح! 🎉');
+                return;
+            } else {
+                showNotification(result.error, 'error');
+                return;
+            }
         }
     } catch (error) {
-        console.error('Signup error:', error);
-        showNotification('خطأ في الاتصال بالخادم', 'error');
+        console.log('Server registration failed, trying local registration:', error);
+    }
+    
+    // في حالة فشل الخادم، استخدم التسجيل المحلي
+    try {
+        const savedUsers = JSON.parse(localStorage.getItem('gamesShopUsers') || '[]');
+        
+        // تحقق من وجود المستخدم
+        if (savedUsers.find(u => u.email === email)) {
+            showNotification('البريد الإلكتروني مستخدم بالفعل', 'error');
+            return;
+        }
+        
+        // إنشاء مستخدم جديد
+        const newUser = {
+            id: Date.now(),
+            name: name,
+            email: email,
+            password: password,
+            avatar: Math.floor(Math.random() * 6) + 1,
+            createdAt: new Date().toISOString()
+        };
+        
+        savedUsers.push(newUser);
+        localStorage.setItem('gamesShopUsers', JSON.stringify(savedUsers));
+        
+        currentUser = {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            avatar: newUser.avatar
+        };
+        localStorage.setItem('gamesShopUser', JSON.stringify(currentUser));
+        userVexBalance = 0;
+        await showMainPage();
+        showNotification('تم إنشاء الحساب بنجاح! 🎉');
+    } catch (localError) {
+        console.error('Local registration error:', localError);
+        showNotification('خطأ في إنشاء الحساب', 'error');
     } finally {
         showLoading(false);
     }
@@ -949,12 +1035,18 @@ function startChat(partnerName, partnerId) {
     }
 
     currentChatPartner = { name: partnerName, id: parseInt(partnerId) };
-    document.getElementById('chatTitle').textContent = `مراسلة ${partnerName}`;
+    
+    // تحديث عنوان المحادثة مع حالة المستخدم
+    updateChatTitle();
+    
     document.getElementById('chatModal').classList.add('active');
     
     // تحديث المحادثات وعرض الرسائل فوراً
     loadConversationsFromStorage();
     loadChatMessages();
+    
+    // تحديث حالة المستخدم كمتصل
+    updateUserOnlineStatus(currentUser.id, true);
     
     console.log(`💬 بدء محادثة مع ${partnerName} (ID: ${partnerId})`);
     
@@ -963,6 +1055,24 @@ function startChat(partnerName, partnerId) {
         await loadConversationsFromServer();
         loadChatMessages();
     }, 500);
+}
+
+function updateChatTitle() {
+    if (!currentChatPartner) return;
+    
+    const isOnline = userOnlineStatus[currentChatPartner.id] || false;
+    const isTyping = typingUsers[currentChatPartner.id] || false;
+    
+    let statusText = '';
+    if (isTyping) {
+        statusText = ' (Typing...)';
+    } else if (isOnline) {
+        statusText = ' (متصل الآن)';
+    } else {
+        statusText = ' (غير متصل)';
+    }
+    
+    document.getElementById('chatTitle').textContent = `مراسلة ${currentChatPartner.name}${statusText}`;
 }
 
 function loadChatMessages() {
@@ -1041,6 +1151,9 @@ async function sendMessage() {
         console.log('⚠️ لا يوجد نص أو مستخدم للمراسلة');
         return;
     }
+
+    // إيقاف تتبع الكتابة
+    stopTyping();
 
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
 
@@ -1196,6 +1309,62 @@ function notifyNewMessage(recipientId) {
 
 function getChatId(userId1, userId2) {
     return [userId1, userId2].sort().join('-');
+}
+
+// تحديث حالة المستخدم (متصل/غير متصل)
+function updateUserOnlineStatus(userId, isOnline) {
+    userOnlineStatus[userId] = isOnline;
+    localStorage.setItem('userOnlineStatus', JSON.stringify(userOnlineStatus));
+    
+    // تحديث عنوان المحادثة إذا كان المستخدم في محادثة
+    if (currentChatPartner && currentChatPartner.id === userId) {
+        updateChatTitle();
+    }
+}
+
+// تتبع الكتابة
+function startTyping() {
+    if (!currentChatPartner) return;
+    
+    typingUsers[currentUser.id] = true;
+    localStorage.setItem('typingUsers', JSON.stringify(typingUsers));
+    
+    // إيقاف تتبع الكتابة بعد 3 ثوانٍ
+    if (typingTimeout) {
+        clearTimeout(typingTimeout);
+    }
+    
+    typingTimeout = setTimeout(() => {
+        stopTyping();
+    }, 3000);
+}
+
+function stopTyping() {
+    if (!currentChatPartner) return;
+    
+    typingUsers[currentUser.id] = false;
+    localStorage.setItem('typingUsers', JSON.stringify(typingUsers));
+    
+    if (typingTimeout) {
+        clearTimeout(typingTimeout);
+        typingTimeout = null;
+    }
+}
+
+// تحديث حالة الكتابة للمستخدم الآخر
+function updateTypingStatus() {
+    const savedTypingUsers = JSON.parse(localStorage.getItem('typingUsers') || '{}');
+    
+    Object.keys(savedTypingUsers).forEach(userId => {
+        if (userId !== currentUser.id.toString()) {
+            typingUsers[parseInt(userId)] = savedTypingUsers[userId];
+        }
+    });
+    
+    // تحديث عنوان المحادثة
+    if (currentChatPartner) {
+        updateChatTitle();
+    }
 }
 
 // Messages modal
@@ -1468,6 +1637,11 @@ async function unblockUser(userId, userName) {
 // Support modal
 function showSupportModal() {
     document.getElementById('supportModal').classList.add('active');
+}
+
+// Website idea modal
+function showWebsiteIdeaModal() {
+    document.getElementById('websiteIdeaModal').classList.add('active');
 }
 
 // Updates modal
