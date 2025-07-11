@@ -151,74 +151,69 @@ body {
 
 /* AdSense Containers */
 .adsense-welcome-container {
-    position: fixed;
-    top: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 999;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 10px;
+    background: rgba(0, 191, 255, 0.05);
+    padding: 1rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
     border-radius: 10px;
-    border: 2px solid #00bfff;
+    border: 1px solid rgba(0, 191, 255, 0.2);
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.1);
 }
 
 .adsense-main-container {
-    position: fixed;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    z-index: 998;
-    background: rgba(0, 0, 0, 0.9);
-    padding: 15px;
+    background: rgba(0, 191, 255, 0.1);
+    padding: 1.5rem;
+    margin: 2rem auto;
+    max-width: 1200px;
     border-radius: 15px;
     border: 2px solid #00bfff;
-    box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 191, 255, 0.2);
 }
 
 .adsense-container {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 997;
-    background: rgba(0, 0, 0, 0.9);
-    padding: 10px;
+    background: rgba(0, 191, 255, 0.05);
+    padding: 1rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
     border-radius: 10px;
-    border: 2px solid #00bfff;
+    border: 1px solid rgba(0, 191, 255, 0.2);
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.1);
 }
 
 .adsense-sidebar {
-    position: fixed;
-    top: 50%;
-    left: 20px;
-    transform: translateY(-50%);
-    z-index: 996;
-    background: rgba(0, 0, 0, 0.9);
-    padding: 10px;
+    background: rgba(0, 191, 255, 0.05);
+    padding: 1rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
     border-radius: 10px;
-    border: 2px solid #00bfff;
+    border: 1px solid rgba(0, 191, 255, 0.2);
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.1);
 }
 
 .adsense-mobile {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    z-index: 995;
-    background: rgba(0, 0, 0, 0.9);
-    padding: 8px;
-    border-radius: 8px;
-    border: 2px solid #00bfff;
+    background: rgba(0, 191, 255, 0.05);
+    padding: 1rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 191, 255, 0.2);
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.1);
 }
 
 .adsense-bottom {
-    position: fixed;
-    bottom: 20px;
-    right: 50%;
-    transform: translateX(50%);
-    z-index: 994;
-    background: rgba(0, 0, 0, 0.9);
-    padding: 10px;
+    background: rgba(0, 191, 255, 0.05);
+    padding: 1rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
     border-radius: 10px;
-    border: 2px solid #00bfff;
+    border: 1px solid rgba(0, 191, 255, 0.2);
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.1);
 }
 
 /* Ad Modal */
@@ -294,17 +289,40 @@ body {
     to { opacity: 1; transform: scale(1); }
 }
 
+/* Ensure full screen display */
+body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.main-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 1rem;
+}
+
+.offers-container {
+    width: 100%;
+    max-width: 100%;
+}
+
 /* Mobile responsiveness for ads */
 @media (max-width: 768px) {
     .adsense-welcome-container,
     .adsense-main-container,
-    .adsense-sidebar {
+    .adsense-sidebar,
+    .adsense-container,
+    .adsense-mobile,
+    .adsense-bottom {
         position: relative;
         margin: 10px auto;
         transform: none;
         top: auto;
         left: auto;
         right: auto;
+        width: 95%;
+        max-width: 95%;
     }
 }
 

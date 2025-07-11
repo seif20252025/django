@@ -555,7 +555,7 @@ async function showMainPage() {
             checkForNewMessages();
             loadConversationsFromServer(); // تحديث المحادثات من الخادم
         }
-    }, 1000); // فحص كل ثانية
+    }, 1000); // فحص كل ثانية بدلاً من 3 ثوانٍ
     
     console.log('✅ تم تحميل الصفحة الرئيسية بنجاح');
 }
