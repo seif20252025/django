@@ -147,8 +147,26 @@ async function loadConversationsFromServer() {
         const response = await fetch(`${API_BASE_URL}/api/conversations/${currentUser.id}`);
         if (response.ok) {
             const serverConversations = await response.json();
-            conversations = serverConversations;
-            console.log('✅ تم تحميل المحادثات من الخادم');
+            // دمج المحادثات من الخادم مع المحادثات المحلية
+            Object.keys(serverConversations).forEach(chatId => {
+                if (!conversations[chatId]) {
+                    conversations[chatId] = [];
+                }
+                // إضافة الرسائل الجديدة فقط
+                serverConversations[chatId].forEach(serverMessage => {
+                    const exists = conversations[chatId].some(localMessage => 
+                        localMessage.timestamp === serverMessage.timestamp && 
+                        localMessage.senderId === serverMessage.senderId
+                    );
+                    if (!exists) {
+                        conversations[chatId].push(serverMessage);
+                    }
+                });
+                // ترتيب الرسائل حسب الوقت
+                conversations[chatId].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            });
+            saveConversationsToStorage();
+            console.log('✅ تم تحميل ودمج المحادثات من الخادم');
         }
     } catch (error) {
         console.log('⚠️ فشل تحميل المحادثات من الخادم:', error);
@@ -930,10 +948,16 @@ function startChat(partnerName, partnerId) {
         return;
     }
 
-    currentChatPartner = { name: partnerName, id: partnerId };
+    currentChatPartner = { name: partnerName, id: parseInt(partnerId) };
     document.getElementById('chatTitle').textContent = `مراسلة ${partnerName}`;
     document.getElementById('chatModal').classList.add('active');
-    loadChatMessages();
+    
+    // تحميل المحادثات أولاً ثم عرض الرسائل
+    loadConversationsFromStorage();
+    setTimeout(() => {
+        loadChatMessages();
+    }, 100);
+    
     console.log(`💬 بدء محادثة مع ${partnerName} (ID: ${partnerId})`);
 }
 
@@ -941,23 +965,42 @@ function loadChatMessages() {
     if (!currentChatPartner) return;
 
     const chatId = getChatId(currentUser.id, currentChatPartner.id);
+    console.log('🔄 تحميل رسائل المحادثة:', chatId);
+    
+    // التأكد من وجود المحادثة
+    if (!conversations[chatId]) {
+        conversations[chatId] = [];
+        console.log('📝 إنشاء محادثة جديدة:', chatId);
+    }
+    
     const messages = conversations[chatId] || [];
     const container = document.getElementById('chatMessages');
 
-    if (!container) return;
+    if (!container) {
+        console.log('❌ لم يتم العثور على حاوي الرسائل');
+        return;
+    }
 
     container.innerHTML = '';
+    console.log('💬 عدد الرسائل للعرض:', messages.length);
 
     if (messages.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: #00bfff; padding: 2rem;">ابدأ المحادثة! 💬</div>';
         return;
     }
 
-    messages.forEach(message => {
-        if (!message.text && !message.image) return;
+    // ترتيب الرسائل حسب الوقت
+    const sortedMessages = messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    sortedMessages.forEach((message, index) => {
+        if (!message.text && !message.image) {
+            console.log('⚠️ رسالة فارغة تم تجاهلها:', index);
+            return;
+        }
 
         const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${message.senderId === currentUser.id ? 'sent' : 'received'}`;
+        const isSent = message.senderId === currentUser.id;
+        messageDiv.className = `chat-message ${isSent ? 'sent' : 'received'}`;
 
         const messageTime = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('ar-EG', {
             hour: '2-digit',
@@ -976,9 +1019,11 @@ function loadChatMessages() {
             ${messageTime ? `<small class="message-time">${messageTime}</small>` : ''}
         `;
         container.appendChild(messageDiv);
+        console.log(`📨 تم عرض رسالة ${index + 1}:`, isSent ? 'مرسلة' : 'مستلمة');
     });
 
     container.scrollTop = container.scrollHeight;
+    console.log('✅ تم تحميل جميع الرسائل بنجاح');
 }
 
 async function sendMessage() {
