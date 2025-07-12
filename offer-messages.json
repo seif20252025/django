@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1752281450022,
+    "senderId": 1752281367277.3,
+    "senderName": "Tester",
+    "senderAvatar": "https://i.pravatar.cc/150?img=6",
+    "recipientId": 1752280798869.586,
+    "recipientName": "Seif",
+    "originalOffer": {
+      "game": "ROBLOX",
+      "offer": "Testing",
+      "requirement": "1 فلوس💵",
+      "image": null
+    },
+    "offerDescription": "مرحبا اريد شراء هذا عرض ههه",
+    "exchangeOption": "offer_only",
+    "exchangeDetails": "",
+    "contactInfo": "",
+    "image": null,
+    "timestamp": "2025-07-12T00:50:50.022Z",
+    "status": "pending"
+  }
+]

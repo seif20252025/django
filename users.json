@@ -22,5 +22,21 @@
     "password": "Boro_10",
     "avatar": 4,
     "joinDate": "2025-07-11T11:55:37.295Z"
+  },
+  {
+    "id": 1752280798869.586,
+    "email": "belinder2525@gmail.com",
+    "name": "Demon",
+    "password": "Demon_10",
+    "avatar": 1,
+    "joinDate": "2025-07-12T00:39:58.869Z"
+  },
+  {
+    "id": 1752281367277.3,
+    "email": "omarcraftalzynt@gmail.com",
+    "name": "Tester",
+    "password": "Tester_10",
+    "avatar": 6,
+    "joinDate": "2025-07-12T00:49:27.277Z"
   }
 ]
