@@ -941,6 +941,12 @@ async function sendOfferMessage() {
         return;
     }
     
+    // التحقق من أن المستخدم لا يرسل رسالة لنفسه
+    if (currentOfferForMessage.userId === currentUser.id) {
+        alert('لا يمكنك إرسال رسالة لنفسك');
+        return;
+    }
+    
     let exchangeDetails = '';
     let contactInfo = '';
     
@@ -967,7 +973,7 @@ async function sendOfferMessage() {
     }
     
     const messageData = {
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         senderId: currentUser.id,
         senderName: currentUser.name,
         senderAvatar: currentUser.customAvatar || `https://i.pravatar.cc/150?img=${currentUser.avatar}`,
@@ -1000,6 +1006,12 @@ async function sendOfferMessage() {
         const result = await response.json();
         
         if (result.success) {
+            // إضافة الرسالة للمصفوفة المحلية إذا كان المستخدم الحالي هو المستلم
+            if (currentUser.id === messageData.recipientId) {
+                offerMessages.unshift(messageData);
+                updateMessageNotification();
+            }
+            
             alert('تم إرسال الرسالة بنجاح!');
             closeModal('sendOfferMessageModal');
             clearSendOfferForm();
@@ -1038,16 +1050,27 @@ async function loadMessages() {
     
     try {
         const response = await fetch(`${API_BASE}/api/offer-messages/${currentUser.id}`);
-        const messages = await response.json();
-        
-        offerMessages = messages;
-        displayOfferMessages(messages);
-        showModal('messagesModal');
-        
-        // Update notification badge
-        updateMessageNotification();
+        if (response.ok) {
+            const messages = await response.json();
+            
+            // ترتيب الرسائل حسب التاريخ (الأحدث أولاً)
+            offerMessages = messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            displayOfferMessages(offerMessages);
+            showModal('messagesModal');
+            
+            // Update notification badge
+            updateMessageNotification();
+        } else {
+            console.error('خطأ في استجابة الخادم:', response.status);
+            offerMessages = [];
+            displayOfferMessages([]);
+            showModal('messagesModal');
+        }
     } catch (error) {
         console.error('خطأ في تحميل الرسائل:', error);
+        offerMessages = [];
+        displayOfferMessages([]);
+        showModal('messagesModal');
     }
 }
 
@@ -1653,16 +1676,33 @@ setInterval(async () => {
     if (currentUser) {
         try {
             const response = await fetch(`${API_BASE}/api/offer-messages/${currentUser.id}`);
-            const messages = await response.json();
-            
-            if (messages.length !== offerMessages.length) {
-                offerMessages = messages;
-                updateMessageNotification();
+            if (response.ok) {
+                const messages = await response.json();
+                
+                // التحقق من وجود رسائل جديدة
+                const newMessagesCount = messages.length;
+                const currentMessagesCount = offerMessages.length;
+                
+                if (newMessagesCount !== currentMessagesCount) {
+                    offerMessages = messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    updateMessageNotification();
+                    
+                    // إذا كان مودال الرسائل مفتوحاً، قم بتحديث العرض
+                    const messagesModal = document.getElementById('messagesModal');
+                    if (messagesModal && messagesModal.classList.contains('active')) {
+                        displayOfferMessages(offerMessages);
+                    }
+                    
+                    // إظهار إشعار للرسائل الجديدة
+                    if (newMessagesCount > currentMessagesCount) {
+                        console.log('تم استلام رسائل جديدة');
+                    }
+                }
             }
         } catch (error) {
             // Silently handle error
         }
     }
-}, 10000);
+}, 5000);
 
 console.log('✅ تم تحميل جميع وظائف الموقع بنجاح');
