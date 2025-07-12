@@ -1006,13 +1006,8 @@ async function sendOfferMessage() {
         const result = await response.json();
         
         if (result.success) {
-            // إضافة الرسالة للمصفوفة المحلية إذا كان المستخدم الحالي هو المستلم
-            if (currentUser.id === messageData.recipientId) {
-                offerMessages.unshift(messageData);
-                updateMessageNotification();
-            }
-            
-            alert('تم إرسال الرسالة بنجاح!');
+            // إظهار إشعار الإرسال
+            showNotification('تم إرسال الرسالة بنجاح! ✅', 'success');
             closeModal('sendOfferMessageModal');
             clearSendOfferForm();
         } else {
@@ -1071,6 +1066,50 @@ async function loadMessages() {
         offerMessages = [];
         displayOfferMessages([]);
         showModal('messagesModal');
+    }
+}
+
+// Refresh messages manually
+async function refreshMessages() {
+    if (!currentUser) return;
+    
+    const refreshBtn = document.getElementById('refreshMessagesBtn');
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'جاري التحديث...⟳';
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/offer-messages/${currentUser.id}`);
+        if (response.ok) {
+            const messages = await response.json();
+            
+            // ترتيب الرسائل حسب التاريخ (الأحدث أولاً)
+            const oldCount = offerMessages.length;
+            offerMessages = messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            displayOfferMessages(offerMessages);
+            
+            // Update notification badge
+            updateMessageNotification();
+            
+            // إظهار رسالة التحديث
+            const newCount = offerMessages.length;
+            if (newCount > oldCount) {
+                showNotification(`تم العثور على ${newCount - oldCount} رسالة جديدة! 📩`, 'success');
+            } else {
+                showNotification('تم تحديث الرسائل ✅', 'info');
+            }
+        } else {
+            showNotification('خطأ في تحديث الرسائل ❌', 'error');
+        }
+    } catch (error) {
+        console.error('خطأ في تحديث الرسائل:', error);
+        showNotification('خطأ في الاتصال بالخادم ❌', 'error');
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = 'تحديث🔄';
+        }
     }
 }
 
@@ -1198,8 +1237,11 @@ function updateMessageNotification() {
     const notification = document.getElementById('messageNotification');
     if (!notification) return;
     
-    if (offerMessages && offerMessages.length > 0) {
+    const pendingMessages = offerMessages.filter(msg => msg.status === 'pending');
+    
+    if (pendingMessages && pendingMessages.length > 0) {
         notification.classList.remove('hidden');
+        notification.textContent = pendingMessages.length;
     } else {
         notification.classList.add('hidden');
     }
@@ -1671,7 +1713,8 @@ setInterval(async () => {
     }
 }, 30000);
 
-// Auto-check for new messages every 10 seconds
+// Auto-check for new messages every 5 seconds
+let lastMessageCount = 0;
 setInterval(async () => {
     if (currentUser) {
         try {
@@ -1684,6 +1727,7 @@ setInterval(async () => {
                 const currentMessagesCount = offerMessages.length;
                 
                 if (newMessagesCount !== currentMessagesCount) {
+                    const oldCount = offerMessages.length;
                     offerMessages = messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                     updateMessageNotification();
                     
@@ -1693,9 +1737,13 @@ setInterval(async () => {
                         displayOfferMessages(offerMessages);
                     }
                     
-                    // إظهار إشعار للرسائل الجديدة
-                    if (newMessagesCount > currentMessagesCount) {
-                        console.log('تم استلام رسائل جديدة');
+                    // إظهار إشعار للرسائل الجديدة فقط إذا زاد العدد
+                    if (newMessagesCount > oldCount && oldCount > 0) {
+                        const newMessageCount = newMessagesCount - oldCount;
+                        showNotification(`📩 رسالة عرض جديدة! (${newMessageCount})`, 'info');
+                        
+                        // إضافة تأثير صوتي (اختياري)
+                        playNotificationSound();
                     }
                 }
             }
@@ -1703,6 +1751,61 @@ setInterval(async () => {
             // Silently handle error
         }
     }
-}, 5000);
+}, 3000);
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    // إنشاء عنصر الإشعار
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-text">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    // إضافة الإشعار للصفحة
+    document.body.appendChild(notification);
+    
+    // إضافة التأثير المرئي
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // إزالة الإشعار تلقائياً بعد 5 ثواني
+    setTimeout(() => {
+        notification.classList.add('hide');
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Play notification sound
+function playNotificationSound() {
+    try {
+        // إنشاء صوت إشعار بسيط
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+        // تجاهل أخطاء الصوت
+    }
+}
 
 console.log('✅ تم تحميل جميع وظائف الموقع بنجاح');

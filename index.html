@@ -236,7 +236,10 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>المراسلات💬</h3>
-                    <button class="close-modal" onclick="closeModal('messagesModal')">×</button>
+                    <div class="header-actions">
+                        <button id="refreshMessagesBtn" class="refresh-btn" onclick="refreshMessages()">تحديث🔄</button>
+                        <button class="close-modal" onclick="closeModal('messagesModal')">×</button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <div id="offerMessagesList" class="offer-messages-list">

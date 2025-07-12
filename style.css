@@ -1854,12 +1854,115 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
     font-weight: bold;
     margin-left: 0.5rem;
     animation: pulse 2s infinite;
+    min-width: 18px;
+    text-align: center;
 }
 
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
+}
+
+/* Toast Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.notification.success {
+    background: linear-gradient(135deg, #00ff80, #00cc66);
+    border: 2px solid #00ff80;
+}
+
+.notification.info {
+    background: linear-gradient(135deg, #00bfff, #0080ff);
+    border: 2px solid #00bfff;
+}
+
+.notification.error {
+    background: linear-gradient(135deg, #ff4757, #ff3742);
+    border: 2px solid #ff4757;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    color: white;
+}
+
+.notification-text {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 1rem;
+    transition: all 0.3s ease;
+}
+
+.notification-close:hover {
+    opacity: 0.7;
+    transform: scale(1.1);
+}
+
+/* Modal Header Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.refresh-btn {
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(45deg, #00ff80, #00cc66);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    box-shadow: 0 3px 10px rgba(0, 255, 128, 0.3);
+}
+
+.refresh-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 255, 128, 0.5);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 3px 10px rgba(0, 255, 128, 0.3);
 }
 
 /* Image Upload Styles */
