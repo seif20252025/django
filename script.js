@@ -944,7 +944,7 @@ function setupMainEventListeners() {
                 return;
             }
 
-            // Find user by ID```python
+            // Find user by ID
             const targetUser = registeredMembers.find(user => user.id.toString() === userId);
             if (!targetUser) {
                 showNotification('لم يتم العثور على مستخدم بهذا الآيدي', 'error');
@@ -1859,8 +1859,7 @@ function resetSendOfferMessageForm() {
     // إعادة تعيين الحقول الموجودة فقط
     if (elements.offerDescription) elements.offerDescription.value = '';
     if (elements.offerExchangeOptions) elements.offerExchangeOptions.classList.add('hidden');
-    if (elements.additionalThingsInput) elements.```python
-additionalThingsInput.classList.add('hidden');
+    if (elements.additionalThingsInput) elements.additionalThingsInput.classList.add('hidden');
     if (elements.contactDetailsInput) elements.contactDetailsInput.classList.add('hidden');
     if (elements.sendOfferImage) {
         elements.sendOfferImage.value = '';
@@ -2784,7 +2783,7 @@ async function saveProfile() {
     }
 
     currentUser.name = newName;
-currentUser.avatar = selectedAvatar;
+    currentUser.avatar = selectedAvatar;
 
     // إذا كانت الصورة مخصصة (string يحتوي على data:image)
     if (typeof selectedAvatar === 'string' && selectedAvatar.startsWith('data:image')) {
