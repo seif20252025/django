@@ -153,13 +153,14 @@ function setupEventListeners() {
 function setupMenuEvents() {
     const menuItems = {
         'homeBtn': () => closeModal('sideMenu'),
-        'messagesBtn': loadMessages,
         'mediatorsBtn': () => showModal('mediatorsModal'),
         'gameOffersBtn': () => showModal('gameSearchModal'),
         'editProfileBtn': () => showModal('editProfileModal'),
         'settingsBtn': () => showModal('settingsModal'),
         'supportBtn': () => showModal('supportModal'),
-        'websiteIdeaBtn': () => showModal('websiteIdeaModal'),
+        'aboutUsBtn': () => showModal('aboutUsModal'),
+        'contactUsBtn': () => showModal('contactUsModal'),
+        'privacyPolicyBtn': () => showModal('privacyPolicyModal'),
         'discordBtn': () => window.open('https://discord.gg/your-discord-link', '_blank'),
         'marketBtn': () => showModal('marketModal')
     };
@@ -338,6 +339,12 @@ function showMainPage() {
     if (currentUser) {
         updateUserDisplay();
         checkAdminStatus();
+        
+        // Show welcome ad and start periodic ads
+        showWelcomeAd();
+        if (!periodicAdTimer) {
+            startPeriodicAds();
+        }
     }
 }
 
@@ -768,6 +775,9 @@ async function handleSubmitOffer() {
             closeModal('addOfferModal');
             clearOfferForm();
             await loadOffers();
+            
+            // Show ad after adding offer
+            showOfferAdModal();
         } else {
             alert('خطأ في إضافة العرض');
         }
@@ -1855,6 +1865,103 @@ function updateContactPlaceholder() {
         default:
             contactInput.placeholder = 'أدخل معلومات التواصل';
     }
+}
+
+// Ad Management System
+let adTimer = null;
+let periodicAdTimer = null;
+
+// Show ad modal with countdown
+function showAdModal() {
+    const modal = document.getElementById('adModal');
+    const closeBtn = document.getElementById('closeAdModal');
+    const timerSpan = document.getElementById('adTimer');
+    
+    let countdown = 5;
+    closeBtn.disabled = true;
+    timerSpan.textContent = countdown;
+    
+    showModal('adModal');
+    
+    // Initialize AdSense ads
+    if (typeof window.adsbygoogle !== 'undefined') {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+    }
+    
+    adTimer = setInterval(() => {
+        countdown--;
+        timerSpan.textContent = countdown;
+        
+        if (countdown <= 0) {
+            clearInterval(adTimer);
+            closeBtn.disabled = false;
+            closeBtn.textContent = '× إغلاق';
+            closeBtn.addEventListener('click', () => {
+                closeModal('adModal');
+            }, { once: true });
+        }
+    }, 1000);
+}
+
+// Show ad when user reaches main page
+function showWelcomeAd() {
+    setTimeout(() => {
+        if (currentUser && document.getElementById('mainPage').classList.contains('active')) {
+            showAdModal();
+        }
+    }, 2000);
+}
+
+// Show periodic ads every 5 minutes
+function startPeriodicAds() {
+    periodicAdTimer = setInterval(() => {
+        if (currentUser && document.getElementById('mainPage').classList.contains('active')) {
+            showAdModal();
+        }
+    }, 5 * 60 * 1000); // 5 minutes
+}
+
+// Show ad when user adds an offer
+function showOfferAdModal() {
+    setTimeout(() => {
+        showAdModal();
+    }, 1000);
+}
+
+// Copy email function
+function copyEmail() {
+    const email = 'belinder2525@gmail.com';
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(email).then(() => {
+            showNotification('تم نسخ البريد الإلكتروني! 📧', 'success');
+        }).catch(() => {
+            fallbackCopyEmail(email);
+        });
+    } else {
+        fallbackCopyEmail(email);
+    }
+}
+
+// Fallback copy method
+function fallbackCopyEmail(email) {
+    const textArea = document.createElement('textarea');
+    textArea.value = email;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showNotification('تم نسخ البريد الإلكتروني! 📧', 'success');
+    } catch (err) {
+        showNotification('فشل في نسخ البريد الإلكتروني ❌', 'error');
+    }
+    
+    document.body.removeChild(textArea);
 }
 
 console.log('✅ تم تحميل جميع وظائف الموقع بنجاح');

@@ -430,11 +430,6 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
     margin: 0 auto 1rem;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
 /* Send Offer Message Modal */
 .exchange-options {
     display: flex;
@@ -904,10 +899,7 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
     color: #ffffff;
 }
 
-.menu-items {
-    padding: 2rem;
-}
-
+/* Menu Items */
 .menu-item {
     width: 100%;
     padding: 1rem;
@@ -920,11 +912,21 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
     transition: all 0.3s ease;
     font-size: 1.1rem;
     text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.8rem;
 }
 
 .menu-item:hover {
     transform: translateX(-5px);
     box-shadow: 0 5px 15px rgba(0, 191, 255, 0.3);
+}
+
+.menu-item i {
+    font-size: 1.2rem;
+    color: #ffffff;
+    min-width: 20px;
 }
 
 /* Modal Styles */
@@ -2413,7 +2415,7 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.8rem;
     }
-    
+
     .contact-label {
         padding: 0.8rem;
         font-size: 0.85rem;

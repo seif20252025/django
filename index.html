@@ -104,16 +104,39 @@
                 <button id="closeMenu" class="close-menu">×</button>
             </div>
             <div class="menu-items">
-                <button id="homeBtn" class="menu-item">البيت🏠</button>
-                <button id="messagesBtn" class="menu-item">المراسلات💬<span id="messageNotification" class="notification-badge hidden">!</span></button>
-                <button id="mediatorsBtn" class="menu-item">الوسطاء👤</button>
-                <button id="gameOffersBtn" class="menu-item">عروض لالعاب معينه🕹️</button>
-                <button id="editProfileBtn" class="menu-item">تعديل الحساب🧢</button>
-                <button id="settingsBtn" class="menu-item">الاعدادات⚙️</button>
-                <button id="supportBtn" class="menu-item">الدعم الفني🔨</button>
-                <button id="websiteIdeaBtn" class="menu-item">فكرة الموقع🟦</button>
-                <button id="discordBtn" class="menu-item">سيرفر الديسكورد🟦</button>
-                <button id="marketBtn" class="menu-item">ماركت🛒</button>
+                <button id="homeBtn" class="menu-item">
+                    <i class="fas fa-home"></i> البيت
+                </button>
+                <button id="mediatorsBtn" class="menu-item">
+                    <i class="fas fa-user-tie"></i> الوسطاء
+                </button>
+                <button id="gameOffersBtn" class="menu-item">
+                    <i class="fas fa-gamepad"></i> عروض لالعاب معينه
+                </button>
+                <button id="editProfileBtn" class="menu-item">
+                    <i class="fas fa-user-edit"></i> تعديل الحساب
+                </button>
+                <button id="settingsBtn" class="menu-item">
+                    <i class="fas fa-cog"></i> الاعدادات
+                </button>
+                <button id="supportBtn" class="menu-item">
+                    <i class="fas fa-tools"></i> الدعم الفني
+                </button>
+                <button id="aboutUsBtn" class="menu-item">
+                    <i class="fas fa-info-circle"></i> من نحن
+                </button>
+                <button id="contactUsBtn" class="menu-item">
+                    <i class="fas fa-envelope"></i> تواصل معنا
+                </button>
+                <button id="privacyPolicyBtn" class="menu-item">
+                    <i class="fas fa-shield-alt"></i> سياسة الخصوصية
+                </button>
+                <button id="discordBtn" class="menu-item">
+                    <i class="fab fa-discord"></i> سيرفر الديسكورد
+                </button>
+                <button id="marketBtn" class="menu-item">
+                    <i class="fas fa-shopping-cart"></i> ماركت
+                </button>
             </div>
         </div>
 
@@ -449,59 +472,202 @@
             </div>
         </div>
 
-        <!-- Website Idea Modal -->
-        <div id="websiteIdeaModal" class="modal">
+        <!-- About Us Modal -->
+        <div id="aboutUsModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>فكرة الموقع🟦</h3>
-                    <button class="close-modal" onclick="closeModal('websiteIdeaModal')">×</button>
+                    <h3><i class="fas fa-info-circle"></i> من نحن</h3>
+                    <button class="close-modal" onclick="closeModal('aboutUsModal')">×</button>
                 </div>
                 <div class="modal-body">
-                    <div class="website-idea-content">
+                    <div class="about-us-content">
                         <h4>🎮 مرحباً بك في GAMES SHOP - منصة التبادل الآمنة للألعاب</h4>
 
-                        <div class="idea-section">
+                        <div class="about-section">
                             <h5>💡 الفكرة الأساسية:</h5>
                             <p>تم إنشاء GAMES SHOP لتكون المنصة الأولى والأكثر أماناً لتبادل عروض الألعاب والحسابات بين اللاعبين العرب. نحن نوفر بيئة آمنة ومنظمة تجمع بين اللاعبين الذين يرغبون في تبادل أو بيع أو شراء عروض الألعاب المختلفة.</p>
                         </div>
 
-                        <div class="idea-section">
-                            <h5>🎯 الأهداف الرئيسية:</h5>
+                        <div class="about-section">
+                            <h5>🎯 أهدافنا الرئيسية:</h5>
                             <p>هدفنا الأساسي هو توفير مساحة آمنة وموثوقة للاعبين العرب لتبادل العروض والحسابات دون القلق من عمليات الاحتيال. نحن نسعى لبناء مجتمع قوي من اللاعبين المحترفين والهواة على حد سواء.</p>
                         </div>
 
-                        <div class="idea-section">
+                        <div class="about-section">
                             <h5>🛡️ الأمان والحماية:</h5>
                             <p>نحن نولي الأمان أهمية قصوى في منصتنا. لهذا السبب، وفرنا نظام وسطاء محترفين متاحين على مدار الساعة للتأكد من إتمام العمليات بشكل آمن. كما نقدم إرشادات واضحة وتحذيرات للمستخدمين لحمايتهم من المحتالين.</p>
                         </div>
 
-                        <div class="idea-section">
+                        <div class="about-section">
                             <h5>🕹️ الألعاب المدعومة:</h5>
                             <p>نحن ندعم جميع الألعاب الشائعة مثل ROBLOX، PUBG، Fortnite، Free Fire، Mobile Legends، Brawl Stars، Brawlhalla، وMinecraft. كما نتوسع باستمرار لإضافة المزيد من الألعاب حسب طلب المجتمع.</p>
                         </div>
 
-                        <div class="idea-section">
+                        <div class="about-section">
                             <h5>💬 التواصل والمراسلة:</h5>
-                            <p>نوفر نظام مراسلة متطور يسمح للمستخدمين بالتواصل المباشر مع بعضهم البعض. النظام يدعم إرسال النصوص والصور، مع إمكانية رؤية حالة المستخدم (متصل/غير متصل) وحالة الكتابة في الوقت الفعلي.</p>
+                            <p>نوفر نظام تواصل متطور يسمح للمستخدمين بالتواصل المباشر مع أصحاب العروض عبر منصات التواصل الاجتماعي المختلفة مثل الواتساب وديسكورد وانستجرام وغيرها، مما يضمن سهولة التواصل والتفاوض.</p>
                         </div>
 
-                        <div class="idea-section">
+                        <div class="about-section">
                             <h5>👑 نظام VIP:</h5>
                             <p>نقدم نظام VIP للمستخدمين الذين يرغبون في الحصول على مزايا إضافية مثل جعل عروضهم ذهبية اللون لجذب المزيد من الانتباه، بالإضافة إلى خصومات حصرية في الماركت الداخلي.</p>
                         </div>
 
-                        <div class="idea-section">
-                            <h5>🌟 المستقبل:</h5>
+                        <div class="about-section">
+                            <h5>🌟 رؤيتنا المستقبلية:</h5>
                             <p>نحن نعمل باستمرار على تطوير المنصة وإضافة المزيد من الميزات المبتكرة. هدفنا هو أن نصبح المرجع الأول للاعبين العرب في تبادل عروض الألعاب، مع الحفاظ على أعلى معايير الأمان والجودة.</p>
                         </div>
 
-                        <div class="idea-section">
-                            <h5>🤝 المجتمع:</h5>
+                        <div class="about-section">
+                            <h5>🤝 مجتمعنا:</h5>
                             <p>نحن نؤمن بقوة المجتمع، ولهذا نشجع التفاعل الإيجابي بين المستخدمين. نوفر قنوات تواصل متعددة ونستمع لآراء وتعليقات المستخدمين لتحسين المنصة باستمرار.</p>
                         </div>
 
-                        <div class="idea-closing">
+                        <div class="about-closing">
                             <p><strong>🎮 GAMES SHOP - حيث يلتقي الأمان مع المتعة في عالم الألعاب 🎮</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Us Modal -->
+        <div id="contactUsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-envelope"></i> تواصل معنا</h3>
+                    <button class="close-modal" onclick="closeModal('contactUsModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="contact-us-content">
+                        <h4>📞 نحن هنا لمساعدتك!</h4>
+                        
+                        <div class="contact-section">
+                            <h5>📧 البريد الإلكتروني الرسمي:</h5>
+                            <div class="email-container">
+                                <p class="email-address">belinder2525@gmail.com</p>
+                                <button onclick="copyEmail()" class="copy-email-btn">
+                                    <i class="fas fa-copy"></i> نسخ
+                                </button>
+                            </div>
+                            <p>يمكنك مراسلتنا على هذا البريد الإلكتروني لأي استفسارات أو مشاكل تواجهك في الموقع.</p>
+                        </div>
+
+                        <div class="contact-section">
+                            <h5>⏰ أوقات الرد:</h5>
+                            <p>نحن نسعى للرد على جميع الرسائل خلال 24 ساعة من استلامها. في حالات الطوارئ، قد نتواصل معك في وقت أقل.</p>
+                        </div>
+
+                        <div class="contact-section">
+                            <h5>💬 قنوات التواصل الأخرى:</h5>
+                            <ul class="contact-methods-list">
+                                <li><i class="fab fa-discord"></i> ديسكورد: انضم لسيرفرنا الرسمي</li>
+                                <li><i class="fas fa-headset"></i> الدعم الفني: متاح من خلال القائمة الجانبية</li>
+                                <li><i class="fas fa-users"></i> الوسطاء: للمساعدة في العمليات الآمنة</li>
+                            </ul>
+                        </div>
+
+                        <div class="contact-section">
+                            <h5>📝 ما يمكنك مراسلتنا بشأنه:</h5>
+                            <ul class="contact-topics">
+                                <li>• مشاكل تقنية في الموقع</li>
+                                <li>• الإبلاغ عن مستخدمين مشبوهين</li>
+                                <li>• اقتراحات لتحسين الموقع</li>
+                                <li>• طلبات إضافة ألعاب جديدة</li>
+                                <li>• استفسارات حول نظام VIP</li>
+                                <li>• أي أسئلة أخرى متعلقة بالموقع</li>
+                            </ul>
+                        </div>
+
+                        <div class="contact-closing">
+                            <p><strong>شكراً لك على اختيار GAMES SHOP! نحن نقدر ثقتك بنا ونسعى لخدمتك على أفضل وجه. 🎮</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacy Policy Modal -->
+        <div id="privacyPolicyModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-shield-alt"></i> سياسة الخصوصية</h3>
+                    <button class="close-modal" onclick="closeModal('privacyPolicyModal')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="privacy-policy-content">
+                        <h4>🔒 التزامنا بحماية خصوصيتك</h4>
+                        
+                        <div class="privacy-section">
+                            <h5>📋 مقدمة:</h5>
+                            <p>نحن في GAMES SHOP نحترم خصوصية زوارنا ومستخدمينا ونلتزم بحماية المعلومات الشخصية التي يشاركونها معنا. هذه السياسة توضح كيف نجمع ونستخدم ونحمي بياناتك الشخصية.</p>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>📊 المعلومات التي نجمعها:</h5>
+                            <ul class="privacy-list">
+                                <li>• عنوان البريد الإلكتروني وكلمة المرور</li>
+                                <li>• الاسم المستعار الذي تختاره</li>
+                                <li>• الصورة الرمزية (إن وجدت)</li>
+                                <li>• العروض والمنشورات التي تشاركها</li>
+                                <li>• معلومات التواصل التي تضعها في العروض</li>
+                            </ul>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>🎯 كيف نستخدم معلوماتك:</h5>
+                            <ul class="privacy-list">
+                                <li>• إنشاء وإدارة حسابك الشخصي</li>
+                                <li>• عرض العروض والتفاعل مع المستخدمين الآخرين</li>
+                                <li>• تحسين تجربة استخدام الموقع</li>
+                                <li>• التواصل معك عند الضرورة</li>
+                                <li>• ضمان أمان الموقع ومنع الانتهاكات</li>
+                            </ul>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>🔐 حماية بياناتك:</h5>
+                            <p>نحن نتخذ إجراءات أمنية صارمة لحماية معلوماتك الشخصية من الوصول غير المصرح به أو التغيير أو الكشف أو التدمير. جميع البيانات محفوظة بطريقة آمنة ومشفرة.</p>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>🚫 ما لا نفعله ببياناتك:</h5>
+                            <ul class="privacy-list">
+                                <li>• لا نبيع معلوماتك الشخصية لأطراف ثالثة</li>
+                                <li>• لا نشارك بياناتك دون موافقتك</li>
+                                <li>• لا نرسل رسائل تسويقية غير مرغوب فيها</li>
+                                <li>• لا نستخدم معلوماتك لأغراض غير متعلقة بالموقع</li>
+                            </ul>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>🍪 ملفات تعريف الارتباط:</h5>
+                            <p>نستخدم ملفات تعريف الارتباط (Cookies) لتحسين تجربة استخدامك للموقع وحفظ تفضيلاتك. يمكنك تعطيل هذه الملفات من إعدادات متصفحك إذا كنت تفضل ذلك.</p>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>👤 حقوقك:</h5>
+                            <ul class="privacy-list">
+                                <li>• الحق في الوصول إلى بياناتك الشخصية</li>
+                                <li>• الحق في تعديل أو تحديث معلوماتك</li>
+                                <li>• الحق في حذف حسابك وبياناتك</li>
+                                <li>• الحق في الاعتراض على معالجة بياناتك</li>
+                            </ul>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>📧 التواصل معنا:</h5>
+                            <p>إذا كان لديك أي أسئلة حول سياسة الخصوصية أو كيفية التعامل مع بياناتك، يمكنك التواصل معنا على: <strong>belinder2525@gmail.com</strong></p>
+                        </div>
+
+                        <div class="privacy-section">
+                            <h5>🔄 تحديث السياسة:</h5>
+                            <p>قد نقوم بتحديث هذه السياسة من وقت لآخر. سنقوم بإشعارك بأي تغييرات مهمة عبر الموقع أو البريد الإلكتروني.</p>
+                        </div>
+
+                        <div class="privacy-closing">
+                            <p><strong>تاريخ آخر تحديث: 12 يوليو 2025</strong></p>
+                            <p><em>باستخدامك لموقع GAMES SHOP، فإنك توافق على هذه السياسة.</em></p>
                         </div>
                     </div>
                 </div>
@@ -676,6 +842,33 @@
                         <p>الوقت المتبقي: <span id="banTimeRemaining"></span></p>
                         <button id="closeBanWarning" class="agree-btn">موافق</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ad Modal -->
+        <div id="adModal" class="modal">
+            <div class="modal-content ad-modal">
+                <div class="modal-header">
+                    <h3>🎮 إعلان - GAMES SHOP</h3>
+                    <button id="closeAdModal" class="close-modal" disabled>× <span id="adTimer" class="ad-timer">5</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ad-container">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1404937854433871"
+                             crossorigin="anonymous"></script>
+                        <!-- Games_Shop -->
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-1404937854433871"
+                             data-ad-slot="5626204450"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                        <script>
+                             (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                    </div>
+                    <p class="ad-message">شكراً لدعمك لموقع GAMES SHOP! 🎮</p>
                 </div>
             </div>
         </div>
