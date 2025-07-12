@@ -661,9 +661,13 @@ function createOfferHTML(offer) {
                     <div class="offer-detail">
                         <strong>المطلوب:</strong> ${offer.requirement}
                     </div>
+                    ${offer.contactMethod && offer.contactInfo ? `
+                    <div class="offer-detail contact-info">
+                        <strong>للتواصل معي📱:</strong> ${offer.contactMethod === 'whatsapp' ? '📞' : offer.contactMethod === 'discord' ? '💬' : offer.contactMethod === 'instagram' ? '⚛️' : offer.contactMethod === 'snapchat' ? '👻' : '✉️'} ${offer.contactInfo}
+                    </div>
+                    ` : ''}
                 </div>
                 <div class="offer-actions">
-                    ${!isOwner ? `<button class="action-btn message-btn" onclick="showSendOfferMessage(${offer.id})">ارسال رساله📩</button>` : ''}
                     <button class="action-btn like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike(${offer.id})">
                         ❤️ <span class="like-count">${offer.likes || 0}</span>
                     </button>
@@ -725,6 +729,15 @@ async function handleSubmitOffer() {
         imageData = await convertFileToBase64(offerImageFile);
     }
     
+    // الحصول على معلومات التواصل
+    const contactMethod = document.querySelector('input[name="contactMethod"]:checked')?.value;
+    const contactInfo = document.getElementById('contactInfo').value.trim();
+    
+    if (!contactMethod || !contactInfo) {
+        alert('يرجى اختيار طريقة التواصل وإدخال المعلومات المطلوبة');
+        return;
+    }
+    
     const offerData = {
         userId: currentUser.id,
         userName: currentUser.name,
@@ -734,7 +747,9 @@ async function handleSubmitOffer() {
         offer: offerText,
         requirement: requirement,
         isVIP: currentUser.isVIP || false,
-        image: imageData
+        image: imageData,
+        contactMethod: contactMethod,
+        contactInfo: contactInfo
     };
     
     try {
@@ -774,6 +789,12 @@ function clearOfferForm() {
     document.getElementById('priceInput').classList.add('hidden');
     document.getElementById('accountInput').classList.add('hidden');
     document.getElementById('imagePreview').classList.add('hidden');
+    document.getElementById('contactInfo').value = '';
+    
+    // Reset contact method selection
+    document.querySelectorAll('input[name="contactMethod"]').forEach(radio => {
+        radio.checked = false;
+    });
     
     // Reset buttons
     document.getElementById('currencyBtn').classList.remove('active');
@@ -1805,6 +1826,34 @@ function playNotificationSound() {
         oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
         // تجاهل أخطاء الصوت
+    }
+}
+
+// Update contact info placeholder based on selected method
+function updateContactPlaceholder() {
+    const selectedMethod = document.querySelector('input[name="contactMethod"]:checked')?.value;
+    const contactInput = document.getElementById('contactInfo');
+    
+    if (!contactInput) return;
+    
+    switch(selectedMethod) {
+        case 'whatsapp':
+            contactInput.placeholder = 'أدخل رقم الواتساب (مثال: +966501234567)';
+            break;
+        case 'discord':
+            contactInput.placeholder = 'أدخل اسم المستخدم في ديسكورد (مثال: username#1234)';
+            break;
+        case 'instagram':
+            contactInput.placeholder = 'أدخل اسم المستخدم في انستجرام (مثال: @username)';
+            break;
+        case 'snapchat':
+            contactInput.placeholder = 'أدخل اسم المستخدم في سناب شات (مثال: username)';
+            break;
+        case 'facebook':
+            contactInput.placeholder = 'أدخل اسم المستخدم في فيسبوك أو رابط الحساب';
+            break;
+        default:
+            contactInput.placeholder = 'أدخل معلومات التواصل';
     }
 }
 

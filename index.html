@@ -178,6 +178,32 @@
                         <label>اكتب بيانات الحساب الذي تريده👤</label>
                         <textarea id="accountDetails" class="form-control" placeholder="اكتب بيانات الحساب المطلوب"></textarea>
                     </div>
+                    <div class="form-group">
+                        <label>للتواصل معي📱:</label>
+                        <div class="contact-methods">
+                            <div class="contact-option">
+                                <input type="radio" id="whatsapp" name="contactMethod" value="whatsapp" onchange="updateContactPlaceholder()">
+                                <label for="whatsapp" class="contact-label">واتساب📞</label>
+                            </div>
+                            <div class="contact-option">
+                                <input type="radio" id="discord" name="contactMethod" value="discord" onchange="updateContactPlaceholder()">
+                                <label for="discord" class="contact-label">ديسكورد💬</label>
+                            </div>
+                            <div class="contact-option">
+                                <input type="radio" id="instagram" name="contactMethod" value="instagram" onchange="updateContactPlaceholder()">
+                                <label for="instagram" class="contact-label">انستجرام⚛️</label>
+                            </div>
+                            <div class="contact-option">
+                                <input type="radio" id="snapchat" name="contactMethod" value="snapchat" onchange="updateContactPlaceholder()">
+                                <label for="snapchat" class="contact-label">سناب👻</label>
+                            </div>
+                            <div class="contact-option">
+                                <input type="radio" id="facebook" name="contactMethod" value="facebook" onchange="updateContactPlaceholder()">
+                                <label for="facebook" class="contact-label">فيسبوك✉️</label>
+                            </div>
+                        </div>
+                        <input type="text" id="contactInfo" class="form-control" placeholder="أدخل معلومات التواصل" required>
+                    </div>
                     <button id="submitOffer" class="submit-btn">ارســـــــال▶️</button>
                 </div>
             </div>

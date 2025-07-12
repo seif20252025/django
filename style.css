@@ -2349,6 +2349,78 @@ button, .action-btn, .menu-btn, .add-offer-btn, .updates-btn {
     margin-left: 0.5rem;
 }
 
+/* Contact Methods Styling */
+.contact-methods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.contact-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.contact-option input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #00bfff;
+}
+
+.contact-label {
+    background: linear-gradient(45deg, #004e92, #000428);
+    border: 2px solid #00bfff;
+    border-radius: 8px;
+    color: white;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+}
+
+.contact-option input[type="radio"]:checked + .contact-label {
+    background: linear-gradient(45deg, #00bfff, #004e92);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.3);
+    border-color: #ffffff;
+}
+
+.contact-option input[type="radio"] {
+    display: none;
+}
+
+.contact-info {
+    background: rgba(0, 191, 255, 0.15);
+    border-left: 4px solid #00bfff;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+
+.contact-info strong {
+    color: #00bfff;
+    margin-left: 0.5rem;
+}
+
+/* Mobile responsive for contact methods */
+@media (max-width: 768px) {
+    .contact-methods {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8rem;
+    }
+    
+    .contact-label {
+        padding: 0.8rem;
+        font-size: 0.85rem;
+        min-width: auto;
+    }
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 8px;
