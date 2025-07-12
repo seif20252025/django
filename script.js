@@ -451,6 +451,12 @@ function setupEventListeners() {
 }
 
 function setupAuthEventListeners() {
+    // التأكد من تحميل العناصر أولاً
+    if (document.readyState !== 'complete') {
+        setTimeout(setupAuthEventListeners, 100);
+        return;
+    }
+
     // Auth system - التأكد من وجود العناصر قبل ربط الأحداث
     const loginSubmitBtn = document.getElementById('loginSubmitBtn');
     const signupSubmitBtn = document.getElementById('signupSubmitBtn');
@@ -938,7 +944,7 @@ function setupMainEventListeners() {
                 return;
             }
 
-            // Find user by ID
+            // Find user by ID```python
             const targetUser = registeredMembers.find(user => user.id.toString() === userId);
             if (!targetUser) {
                 showNotification('لم يتم العثور على مستخدم بهذا الآيدي', 'error');
@@ -1853,10 +1859,12 @@ function resetSendOfferMessageForm() {
     // إعادة تعيين الحقول الموجودة فقط
     if (elements.offerDescription) elements.offerDescription.value = '';
     if (elements.offerExchangeOptions) elements.offerExchangeOptions.classList.add('hidden');
-    if (elements.additionalThingsInput) elements.additionalThingsInput.classList.add('hidden');
+    if (elements.additionalThingsInput) elements.```python
+additionalThingsInput.classList.add('hidden');
     if (elements.contactDetailsInput) elements.contactDetailsInput.classList.add('hidden');
-    if (```text
-elements.sendOfferImage) elements.sendOfferImage.value = '';
+    if (elements.sendOfferImage) {
+        elements.sendOfferImage.value = '';
+    }
 
     if (elements.sendOfferImagePreview) {
         elements.sendOfferImagePreview.innerHTML = '';
@@ -2776,7 +2784,7 @@ async function saveProfile() {
     }
 
     currentUser.name = newName;
-    currentUser.avatar = selectedAvatar;
+currentUser.avatar = selectedAvatar;
 
     // إذا كانت الصورة مخصصة (string يحتوي على data:image)
     if (typeof selectedAvatar === 'string' && selectedAvatar.startsWith('data:image')) {
