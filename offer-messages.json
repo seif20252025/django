@@ -19,5 +19,26 @@
     "image": null,
     "timestamp": "2025-07-12T00:50:50.022Z",
     "status": "pending"
+  },
+  {
+    "id": 1752311637270.9136,
+    "senderId": 1752281367277.3,
+    "senderName": "Tester",
+    "senderAvatar": "https://i.pravatar.cc/150?img=6",
+    "recipientId": 1752280798869.586,
+    "recipientName": "Demon",
+    "originalOffer": {
+      "game": "ROBLOX",
+      "offer": "هيوجات بت سمليتر",
+      "requirement": "500 روبوكس🪙",
+      "image": null
+    },
+    "offerDescription": "هل يمكنني رؤيه العرض",
+    "exchangeOption": "offer_only",
+    "exchangeDetails": "",
+    "contactInfo": "",
+    "image": null,
+    "timestamp": "2025-07-12T09:13:57.270Z",
+    "status": "pending"
   }
 ]
